@@ -71,7 +71,7 @@ const GRUPOS_DECORACAO = [
 ];
 
 export default function CategoryNavClient({ pais, all }: Props) {
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
   // Slugs reservados que NÃO devem aparecer avulsos na barra principal
@@ -118,16 +118,12 @@ export default function CategoryNavClient({ pais, all }: Props) {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setOpenDropdownId(null);
+        setActiveDropdown(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const isInfantilOpen = openDropdownId === 'infantil-ui-dropdown';
-  const isDecoracaoOpen = openDropdownId === 'decoracao-ui-dropdown';
-  const isTematicosOpen = openDropdownId === 'tematicos-ui-dropdown';
 
   // Helper para resolver link da categoria (se existir na base ou via slug)
   const getCategoryLink = (slug: string) => {
@@ -136,46 +132,51 @@ export default function CategoryNavClient({ pais, all }: Props) {
     return `/categoria/${slug}`;
   };
 
+  const toggleDropdown = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveDropdown(prev => (prev === id ? null : id));
+  };
+
   return (
-    <nav className="w-full bg-white border-t border-gray-100 shadow-2xs z-40 relative" ref={navRef}>
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5">
-        <div className="flex flex-nowrap items-center justify-center gap-1 sm:gap-1.5 md:gap-2 overflow-x-auto no-scrollbar">
+    <nav className="w-full bg-white border-t border-gray-100 shadow-2xs z-40 relative overflow-visible" ref={navRef}>
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5 overflow-visible">
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-center gap-1 sm:gap-1.5 md:gap-2 overflow-visible">
           
           {/* Grupos de Produtos Pet (Adesivos, Bandanas, Gargantilhas, Gravatinhas, Lacinhos) */}
           {padraoPais.map((cat) => {
             const subs = getSubcategorias(cat.id);
             const temSub = subs.length > 0;
-            const isOpen = openDropdownId === cat.id;
             const emoji = CATEGORY_EMOJIS[cat.slug];
+            const isThisOpen = activeDropdown === cat.id;
 
             return (
-              <div
-                key={cat.id}
-                className="relative group flex-shrink-0"
-                onMouseEnter={() => setOpenDropdownId(cat.id)}
-                onMouseLeave={() => setOpenDropdownId(null)}
-              >
-                <Link
-                  href={`/categoria/${cat.slug}`}
-                  onClick={() => setOpenDropdownId(null)}
-                  className="flex items-center gap-1 sm:gap-1.5 bg-white border border-gray-200 text-slate-800 hover:border-pink-400 hover:text-pink-600 rounded-full px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs md:text-[13px] font-bold transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
-                >
-                  {emoji && <span className="text-xs">{emoji}</span>}
-                  <span>{getCleanCategoryName(cat.nome)}</span>
+              <div key={cat.id} className="relative group flex-shrink-0">
+                <div className="flex items-center">
+                  <Link
+                    href={`/categoria/${cat.slug}`}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-1 sm:gap-1.5 bg-white border border-gray-200 text-slate-800 hover:border-pink-400 hover:text-pink-600 rounded-full px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs md:text-[13px] font-bold transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
+                  >
+                    {emoji && <span className="text-xs">{emoji}</span>}
+                    <span>{getCleanCategoryName(cat.nome)}</span>
+                  </Link>
                   {temSub && (
-                    <ChevronDown
-                      size={13}
-                      className={`text-gray-400 group-hover:text-pink-500 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
-                    />
+                    <button
+                      type="button"
+                      onClick={(e) => toggleDropdown(cat.id, e)}
+                      className="-ml-3 pl-1 pr-2 py-1 text-gray-400 hover:text-pink-600 cursor-pointer z-10"
+                      aria-label="Abrir subcategorias"
+                    >
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isThisOpen ? 'rotate-180 text-pink-600' : 'group-hover:rotate-180'}`} />
+                    </button>
                   )}
-                </Link>
+                </div>
 
                 {/* Subcategorias do grupo padrão */}
                 {temSub && (
-                  <div className="absolute left-0 top-full pt-1 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                    <div className="bg-white border border-gray-100 shadow-xl rounded-2xl py-2 min-w-[200px]">
+                  <div className={`absolute left-0 top-full pt-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150 ${isThisOpen ? 'block' : 'hidden group-hover:block'}`}>
+                    <div className="bg-white border border-gray-100 shadow-2xl rounded-2xl py-2 min-w-[200px]">
                       <div className="px-3 py-1 text-[10px] font-black uppercase text-gray-400 tracking-wider border-b border-gray-50 mb-1">
                         Subcategorias
                       </div>
@@ -184,6 +185,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                           <Link
                             key={sub.id}
                             href={`/categoria/${sub.slug}`}
+                            onClick={() => setActiveDropdown(null)}
                             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition rounded-lg mx-1"
                           >
                             <span>{sub.nome}</span>
@@ -197,21 +199,22 @@ export default function CategoryNavClient({ pais, all }: Props) {
             );
           })}
 
-          {/* 1. BOTÃO "TEMÁTICOS PET" (Link direto para /categoria/halloween + Dropdown) */}
+          {/* 1. BOTÃO "TEMÁTICOS PET" */}
           {tematicosCats.length > 0 && (
             <div className="relative group flex-shrink-0">
-              <Link
-                href="/categoria/halloween"
+              <button
+                type="button"
+                onClick={(e) => toggleDropdown('tematicos', e)}
                 className="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 font-extrabold rounded-full px-3 py-1.5 text-xs md:text-[13px] transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
               >
                 <Sparkles size={13} className="text-amber-600 animate-pulse" />
                 <span>Temáticos Pet</span>
-                <ChevronDown size={13} className="text-amber-700 transition-transform duration-200 group-hover:rotate-180" />
-              </Link>
+                <ChevronDown size={13} className={`text-amber-700 transition-transform duration-200 ${activeDropdown === 'tematicos' ? 'rotate-180' : 'group-hover:rotate-180'}`} />
+              </button>
 
               {/* Lista de Categorias Temáticas */}
-              <div className="absolute left-0 top-full pt-1 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                <div className="bg-white border border-amber-100 shadow-xl rounded-2xl py-2 min-w-[220px] max-w-[300px]">
+              <div className={`absolute left-0 top-full pt-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150 ${activeDropdown === 'tematicos' ? 'block' : 'hidden group-hover:block'}`}>
+                <div className="bg-white border border-amber-100 shadow-2xl rounded-2xl py-2 min-w-[220px] max-w-[300px]">
                   <div className="px-3 py-1 text-[10px] font-black uppercase text-amber-600 tracking-wider border-b border-amber-50 mb-1 flex items-center justify-between">
                     <span>Datas & Eventos Pet</span>
                     <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">
@@ -228,6 +231,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                         <Link
                           key={tCat.id}
                           href={`/categoria/${tCat.slug}`}
+                          onClick={() => setActiveDropdown(null)}
                           className="flex items-center justify-between px-4 py-2 text-xs font-bold text-gray-800 hover:bg-amber-50 hover:text-amber-900 transition rounded-lg mx-1"
                         >
                           <div className="flex items-center gap-2">
@@ -248,20 +252,21 @@ export default function CategoryNavClient({ pais, all }: Props) {
             </div>
           )}
 
-          {/* 2. BOTÃO "INFANTIL" (Link direto para /categoria/infantil + Dropdown) */}
+          {/* 2. BOTÃO "INFANTIL" */}
           <div className="relative group flex-shrink-0">
-            <Link
-              href="/categoria/infantil"
+            <button
+              type="button"
+              onClick={(e) => toggleDropdown('infantil', e)}
               className="flex items-center gap-1.5 bg-pink-50 text-pink-900 border border-pink-300 hover:bg-pink-100 hover:border-pink-400 font-extrabold rounded-full px-3 py-1.5 text-xs md:text-[13px] transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
             >
               <span className="text-xs">🎈</span>
               <span>Infantil</span>
-              <ChevronDown size={13} className="text-pink-700 transition-transform duration-200 group-hover:rotate-180" />
-            </Link>
+              <ChevronDown size={13} className={`text-pink-700 transition-transform duration-200 ${activeDropdown === 'infantil' ? 'rotate-180' : 'group-hover:rotate-180'}`} />
+            </button>
 
             {/* Menu Dropdown Infantil */}
-            <div className="absolute left-0 sm:left-auto right-0 top-full pt-1 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="bg-white border border-pink-100 shadow-xl rounded-2xl py-2 min-w-[210px] max-w-[260px]">
+            <div className={`absolute left-0 sm:left-auto right-0 top-full pt-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150 ${activeDropdown === 'infantil' ? 'block' : 'hidden group-hover:block'}`}>
+              <div className="bg-white border border-pink-100 shadow-2xl rounded-2xl py-2 min-w-[220px] max-w-[270px]">
                 <div className="px-3 py-1 text-[10px] font-black uppercase text-pink-600 tracking-wider border-b border-pink-50 mb-1 flex items-center justify-between">
                   <span>Linha Infantil</span>
                   <span className="text-[9px] bg-pink-100 text-pink-800 px-1.5 py-0.5 rounded-full font-bold">
@@ -274,6 +279,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                     <Link
                       key={item.slug}
                       href={getCategoryLink(item.slug)}
+                      onClick={() => setActiveDropdown(null)}
                       className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-pink-50 hover:text-pink-700 transition rounded-lg mx-1"
                     >
                       <span className="text-sm">{item.emoji}</span>
@@ -285,20 +291,21 @@ export default function CategoryNavClient({ pais, all }: Props) {
             </div>
           </div>
 
-          {/* 3. BOTÃO "DECORAÇÃO" (Link direto para /categoria/decoracao + Dropdown) */}
+          {/* 3. BOTÃO "DECORAÇÃO" */}
           <div className="relative group flex-shrink-0">
-            <Link
-              href="/categoria/decoracao"
+            <button
+              type="button"
+              onClick={(e) => toggleDropdown('decoracao', e)}
               className="flex items-center gap-1.5 bg-sky-50 text-sky-900 border border-sky-300 hover:bg-sky-100 hover:border-sky-400 font-extrabold rounded-full px-3 py-1.5 text-xs md:text-[13px] transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
             >
               <span className="text-xs">✨</span>
               <span>Decoração</span>
-              <ChevronDown size={13} className="text-sky-700 transition-transform duration-200 group-hover:rotate-180" />
-            </Link>
+              <ChevronDown size={13} className={`text-sky-700 transition-transform duration-200 ${activeDropdown === 'decoracao' ? 'rotate-180' : 'group-hover:rotate-180'}`} />
+            </button>
 
             {/* Menu Dropdown Decoração */}
-            <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="bg-white border border-sky-100 shadow-xl rounded-2xl py-2 min-w-[220px] max-w-[280px]">
+            <div className={`absolute right-0 top-full pt-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150 ${activeDropdown === 'decoracao' ? 'block' : 'hidden group-hover:block'}`}>
+              <div className="bg-white border border-sky-100 shadow-2xl rounded-2xl py-2 min-w-[220px] max-w-[280px]">
                 <div className="px-3 py-1 text-[10px] font-black uppercase text-sky-600 tracking-wider border-b border-sky-50 mb-1 flex items-center justify-between">
                   <span>Linha Decoração</span>
                   <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded-full font-bold">
@@ -311,6 +318,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                     <Link
                       key={item.slug}
                       href={getCategoryLink(item.slug)}
+                      onClick={() => setActiveDropdown(null)}
                       className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-sky-50 hover:text-sky-700 transition rounded-lg mx-1"
                     >
                       <span className="text-sm">{item.emoji}</span>

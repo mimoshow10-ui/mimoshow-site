@@ -73,35 +73,22 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
 
   const instaPhotos = Array.from(new Set([...promoImages, ...defaultPhotos]));
 
-  // Timer para rotação de 3 segundos com barra de progresso suave
+  // Timer para rotação de 3 segundos (sem travar a CPU do navegador)
   useEffect(() => {
-    if (total <= 1 || isPaused || !rightOpen) return;
-
-    const intervalTime = 3000; // 3 segundos
-    const stepTime = 50; // atualiza a cada 50ms para animação suave
-    let elapsed = 0;
+    if (total <= 1 || isPaused || !leftOpen) return;
 
     const interval = setInterval(() => {
-      elapsed += stepTime;
-      setProgress(Math.min((elapsed / intervalTime) * 100, 100));
-
-      if (elapsed >= intervalTime) {
-        elapsed = 0;
-        setProgress(0);
-        setCurrentIndex((prev) => (prev + 1) % total);
-      }
-    }, stepTime);
+      setCurrentIndex((prev) => (prev + 1) % total);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [total, isPaused, rightOpen, currentIndex]);
+  }, [total, isPaused, leftOpen]);
 
   const handleNext = () => {
-    setProgress(0);
     setCurrentIndex((prev) => (prev + 1) % total);
   };
 
   const handlePrev = () => {
-    setProgress(0);
     setCurrentIndex((prev) => (prev - 1 + total) % total);
   };
 
