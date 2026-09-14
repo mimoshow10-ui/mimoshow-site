@@ -121,17 +121,17 @@ export default function AdminLoginPage() {
           <div className="w-20 h-20 mx-auto relative mb-2">
             <Image
               src="/logo-luxo.jpg"
-              alt="Banho & Tosa Pet"
+              alt="Site Mimoshow"
               fill
               className="object-contain"
+              priority
             />
           </div>
-          <h1 className="text-xl font-heading font-black tracking-tight text-white flex items-center justify-center gap-2">
-            <ShieldCheck className="text-amber-400" size={20} />
+          <h1 className="text-2xl font-black text-white font-heading">
             Painel Administrativo
           </h1>
-          <p className="text-xs text-blue-200 mt-1 font-medium">
-            Autenticação Administrativa Banho & Tosa Pet
+          <p className="text-blue-200 text-xs mt-1">
+            Autenticação Administrativa Site Mimoshow
           </p>
         </div>
 
@@ -236,7 +236,7 @@ export default function AdminLoginPage() {
         {/* Rodapé */}
         <div className="p-4 bg-gray-50 text-center border-t border-gray-100">
           <p className="text-[11px] text-gray-400 font-medium">
-            Banho & Tosa Pet • Proteção Exclusiva de Acesso Administrativo
+            Site Mimoshow • Proteção Exclusiva de Acesso Administrativo
           </p>
         </div>
 

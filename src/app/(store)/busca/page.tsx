@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
 
 import { hasValidPhoto } from '@/lib/productFilter';
+import { getOcultosVitrine } from '@/lib/vitrineManager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,6 +18,7 @@ export default async function BuscaPage({
   const q = params.q?.trim() || '';
 
   let produtos: any[] = [];
+  const ocultosVitrine = await getOcultosVitrine();
 
   if (q) {
     const { data } = await supabase
@@ -26,7 +28,9 @@ export default async function BuscaPage({
       .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
       .order('criado_em', { ascending: false });
 
-    if (data) produtos = data;
+    if (data) {
+      produtos = data.filter(p => !ocultosVitrine.has(String(p.id)));
+    }
   }
 
   return (

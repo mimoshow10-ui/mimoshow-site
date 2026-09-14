@@ -88,19 +88,19 @@ export async function enviarParaMelhorEnvio(pedido: any): Promise<{ sucesso: boo
       service: 1, // PAC Padrão Correios / Melhor Envio
       agency: 1,
       from: {
-        name: 'Banho & Tosa Pet',
-        phone: '11930813280',
-        email: 'sac@mimoshow.com.br',
-        document: '00000000000000',
+        name: 'MIMO Show',
+        phone: '11999999999',
+        email: 'contato@mimoshow.com.br',
         address: 'Rua Principal',
         number: '100',
-        postal_code: meTrans?.cep_origem || '01000-000',
+        district: 'Centro',
         city: 'São Paulo',
         state_abbr: 'SP',
         country_id: 'BR',
+        postal_code: '01001000'
       },
       to: {
-        name: pedido.cliente?.nome_completo || 'Cliente Banho & Tosa',
+        name: pedido.cliente?.nome_completo || 'Cliente MIMO Show',
         phone: pedido.cliente?.telefone || '11999999999',
         email: pedido.cliente?.email || 'cliente@email.com',
         document: (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, ''),

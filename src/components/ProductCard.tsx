@@ -111,10 +111,11 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
             </span>
           )}
 
-          {/* Timer de Validade Promocional */}
+          {/* Badge de Validade Promocional Leve */}
           {timerAtivo && (
-            <div className="pt-1 border-t border-orange-100">
-              <CountdownTimer targetDate={produto.promocao_expira_em!} />
+            <div className="pt-1 border-t border-red-100 flex items-center justify-between text-[10px] text-red-600 font-bold bg-red-50/50 px-2 py-1 rounded-lg">
+              <span>⚡ Oferta Especial</span>
+              <span className="bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-mono font-black">EXPIRA HOJE</span>
             </div>
           )}
 

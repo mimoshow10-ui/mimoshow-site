@@ -52,7 +52,7 @@ export default async function TreinamentoIAPage({
     .maybeSingle();
 
   const valor = config?.valor || {
-    instrucoes: 'Somos a Banho & Tosa Pet. Responda sempre de forma gentil, profissional, entusiasmada e focada no bem-estar animal.',
+    instrucoes: 'Somos a MIMO Show. Responda sempre de forma gentil, profissional, entusiasmada e focada nos nossos produtos.',
     faq: 'P: Os adesivos grudam bem?\nR: Sim! Nossos adesivos em EVA usam cola atóxica especial própria para fixação nos pelos limpos e secos sem machucar o animal.\n\nP: Qual o prazo de envio?\nR: Postamos os pedidos em até 24h úteis após a confirmação do pagamento.',
     api_key: '',
     gemini_key: ''

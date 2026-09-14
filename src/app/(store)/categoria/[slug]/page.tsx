@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
 import { notFound } from 'next/navigation';
 import { hasValidPhoto } from '@/lib/productFilter';
+import { getOcultosVitrine } from '@/lib/vitrineManager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -30,14 +31,16 @@ export default async function CategoriaPage({
 
   const PROD_FIELDS = 'id, nome, slug, preco, preco_promocional, promocao_expira_em, imagens, codigo_barras, sku, ativo, categoria_id';
 
+  const ocultosVitrine = await getOcultosVitrine();
+
   if (slug === 'todas') {
     const { data } = await supabase
       .from('produtos')
       .select(PROD_FIELDS)
       .eq('ativo', true)
       .order('criado_em', { ascending: false })
-      .limit(80);
-    if (data) produtos = data;
+      .limit(120);
+    if (data) produtos = data.filter(p => !ocultosVitrine.has(String(p.id)));
   } else if (catAtual) {
     const { data: allCategories } = await supabase
       .from('categorias')
@@ -71,9 +74,9 @@ export default async function CategoriaPage({
       .eq('ativo', true)
       .in('categoria_id', idsRelacionados)
       .order('criado_em', { ascending: false })
-      .limit(80);
+      .limit(120);
 
-    if (data) produtos = data;
+    if (data) produtos = data.filter(p => !ocultosVitrine.has(String(p.id)));
   }
 
   const produtosFiltrados = produtos;

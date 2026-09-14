@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 import { linkProductToFamily, removeMemberFromFamily } from '@/lib/familyManager';
+import { setProdutosOcultosVitrineEmMassa } from '@/lib/vitrineManager';
 
 export async function POST(req: Request) {
   try {
@@ -177,6 +178,12 @@ export async function POST(req: Request) {
       for (const prodId of ids) {
         await removeMemberFromFamily(prodId);
       }
+
+    // ── 9. OCULTAR / EXIBIR NA VITRINE (VENDA APENAS COMO VARIAÇÃO) ──
+    } else if (acao === 'ocultar_vitrine') {
+      await setProdutosOcultosVitrineEmMassa(ids, true);
+    } else if (acao === 'exibir_vitrine') {
+      await setProdutosOcultosVitrineEmMassa(ids, false);
     } else {
       return NextResponse.json({ erro: 'Ação em massa inválida.' }, { status: 400 });
     }

@@ -6,6 +6,7 @@ import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
 import VariacaoManager from '@/components/VariacaoManager';
 import { getFamilyConfig } from '@/lib/familyManager';
+import { getOcultosVitrine, setProdutoOcultoVitrine } from '@/lib/vitrineManager';
 
 async function atualizarProduto(formData: FormData) {
   'use server'
@@ -91,6 +92,14 @@ async function atualizarProduto(formData: FormData) {
     redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
   }
 
+  // Salvar Visibilidade na Vitrine (Oculto da Vitrine / Apenas Variação)
+  try {
+    const ocultar_na_vitrine = formData.get('ocultar_na_vitrine') === 'true';
+    await setProdutoOcultoVitrine(id, ocultar_na_vitrine);
+  } catch (errVitrine) {
+    console.error('Erro ao atualizar visibilidade na vitrine:', errVitrine);
+  }
+
   // Salvar Categorias Adicionais em configuracoes
   try {
     const categorias_adicionais_str = formData.get('categorias_adicionais') as string;
@@ -170,6 +179,9 @@ export default async function EditarProduto(props: {
 
   const { data: configAdicionais } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
   const adicionaisIniciais: string[] = configAdicionais?.valor?.[id] || [];
+
+  const ocultosSet = await getOcultosVitrine();
+  const isOcultoVitrine = ocultosSet.has(String(id));
 
   let destaqueInicial = 'nenhum';
   if (produto?.destaque_super_promocao) {
@@ -328,6 +340,31 @@ export default async function EditarProduto(props: {
             <label className="block text-sm font-medium mb-1">Estoque Físico</label>
             <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-border rounded-lg p-2 bg-gray-50" readOnly />
           </div>
+        </div>
+
+        {/* CONTROLE DE EXIBIÇÃO NA VITRINE (ATIVO P/ VENDAS, MAS OCULTO NA VITRINE / SÓ COMO VARIAÇÃO) */}
+        <div className="bg-amber-50/80 border border-amber-200 p-4 md:p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">👁️‍🗨️</span>
+              <h3 className="text-sm font-black text-amber-950">Exibição na Vitrine da Loja</h3>
+            </div>
+            <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+              Quando ativado, este produto continua <strong>100% ativo para vendas</strong> e pode ser escolhido normalmente pelo cliente dentro de sua <strong>Família / Variações</strong>, porém <strong>NÃO aparecerá como um produto avulso</strong> na vitrine principal, categorias e pesquisa.
+            </p>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer bg-white px-4 py-3 rounded-xl border border-amber-300 shadow-2xs hover:bg-amber-100/60 transition flex-shrink-0">
+            <input
+              type="checkbox"
+              name="ocultar_na_vitrine"
+              defaultChecked={isOcultoVitrine}
+              value="true"
+              className="w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer accent-amber-600"
+            />
+            <span className="text-xs font-black text-amber-950">
+              Ocultar na Vitrine (Vender apenas como Variação)
+            </span>
+          </label>
         </div>
 
         <div className="mt-6">

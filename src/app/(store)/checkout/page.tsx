@@ -287,7 +287,7 @@ export default function CheckoutPage() {
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-heading font-black text-xl text-secondary">
             <span className="text-primary text-2xl">🐶</span>
-            Banho & Tosa Pet
+            MIMO Show
           </Link>
           <div className="flex items-center gap-1 text-xs text-gray-500 font-medium">
             <ShieldCheck size={16} className="text-green-600" />

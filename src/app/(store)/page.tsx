@@ -75,12 +75,13 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
-  const produtos = todosProdutos || [];
+  const produtos = (todosProdutos || []).filter(p => !ocultosVitrine.has(String(p.id)));
   const produtosComFoto = produtos;
 
   // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA E DENTRO DO PERIODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
+    if (ocultosVitrine.has(String(prod.id))) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     
     // Checagem do Inicio da Promocao (se cadastrado)

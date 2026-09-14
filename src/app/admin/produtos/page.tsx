@@ -6,6 +6,7 @@ import ImportadorLoteModal from '@/components/ImportadorLoteModal';
 import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicaoEmMassa';
 import AdminFiltrosAvancados from '@/components/AdminFiltrosAvancados';
 import { getFamilyConfig } from '@/lib/familyManager';
+import { getOcultosVitrine } from '@/lib/vitrineManager';
 
 import { hasValidPhoto } from '@/lib/productFilter';
 
@@ -309,6 +310,7 @@ export default async function AdminProdutos(props: {
         produtos={produtosFormatados || []}
         categorias={categoriasFormatadas || []}
         paiIds={paiIds}
+        ocultosVitrineIniciais={Array.from(await getOcultosVitrine())}
       />
 
       {/* Navegação de Paginação */}

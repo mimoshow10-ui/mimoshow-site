@@ -33,14 +33,16 @@ interface Props {
   produtos: Produto[];
   categorias: Categoria[];
   paiIds: Set<string>;
+  ocultosVitrineIniciais?: string[];
 }
 
-export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, paiIds }: Props) {
+export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, paiIds, ocultosVitrineIniciais = [] }: Props) {
   const searchParams = useSearchParams();
   const currentParamsStr = searchParams.toString();
 
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
+  const [ocultosVitrineSet, setOcultosVitrineSet] = useState<Set<string>>(new Set(ocultosVitrineIniciais));
 
   // Reset selecionados quando os filtros da URL mudarem para evitar seleções presas
   useEffect(() => {
@@ -265,6 +267,8 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               <option value="">⚙️ Escolha a Ação em Massa...</option>
               <option value="agrupar_variacoes">🔗 Vincular Selecionados na mesma Família de Variações</option>
               <option value="desvincular_variacoes">🔓 Desvincular Variações (Remover da Família)</option>
+              <option value="ocultar_vitrine">👁️‍🗨️ Ocultar da Vitrine (Vender apenas como Variação)</option>
+              <option value="exibir_vitrine">👁️ Exibir na Vitrine Normal</option>
               <option value="categoria">🏷️ Alterar Grupo & Subgrupo</option>
               <option value="preco">💵 Reajustar Preço Normal (R$ / %)</option>
               <option value="preco_promocional">🏷️ Definir Preço Promocional (R$ / %)</option>
@@ -697,6 +701,12 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                             {item.destaque_super_promocao && (
                               <span title="Produto destacado na Vitrine de Promoção" className="bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
                                 🔥 Vitrine Promoção
+                              </span>
+                            )}
+
+                            {ocultosVitrineSet.has(item.id) && (
+                              <span title="Produto Ativo para Vendas, mas oculto na vitrine de categorias (disponível apenas como variação)" className="bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                👁️‍🗨️ Apenas Variação (Oculto Vitrine)
                               </span>
                             )}
                           </div>

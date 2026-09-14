@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const treinamento = config?.valor || {};
-    const instrucoes = treinamento.instrucoes || 'Somos a Banho & Tosa Pet. Responda sempre de forma gentil, prestativa e altamente específica sobre a dúvida exata do cliente.';
+    const instrucoes = treinamento.instrucoes || 'Somos a MIMO Show. Responda sempre de forma gentil, prestativa e altamente específica sobre a dúvida exata do cliente.';
     const faq = treinamento.faq || '';
     const apiKey = (treinamento.api_key || process.env.OPENAI_API_KEY || '').trim();
     const geminiKey = (treinamento.gemini_key || process.env.GEMINI_API_KEY || '').trim();

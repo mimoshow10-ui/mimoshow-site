@@ -112,7 +112,7 @@ export async function POST(request: Request) {
         statement_descriptor: 'MIMOSHOWPET',
         external_reference: numeroPedido,
         payer: {
-          name: cliente?.nomeCompleto || 'Cliente Banho & Tosa',
+          name: cliente?.nomeCompleto || 'Cliente MIMO Show',
           email: cliente?.email || 'cliente@email.com',
           identification: cliente?.cpfCnpj ? {
             type: cliente?.tipoPessoa === 'PJ' ? 'CNPJ' : 'CPF',
