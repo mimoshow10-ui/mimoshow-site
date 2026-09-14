@@ -10,11 +10,14 @@ import DesktopSideBanners from "@/components/DesktopSideBanners";
 import OfficialDistributorSection from "@/components/OfficialDistributorSection";
 
 import { hasValidPhoto } from "@/lib/productFilter";
+import { getOcultosVitrine } from "@/lib/vitrineManager";
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  const ocultosVitrine = await getOcultosVitrine();
+
   const defaultBanners = [
     { url: '/banner-pet.jpg', link_url: '/categoria/pet' },
     { url: '/banner-kids.jpg', link_url: '/categoria/criancas' },
@@ -55,7 +58,7 @@ export default async function Home() {
     const { data: specBySku } = await supabase
       .from('produtos')
       .select('*')
-      .in('sku', explicitIds)
+      .in('codigo_barras', explicitIds)
       .eq('ativo', true);
     produtosEspecificos = [...(specById || []), ...(specBySku || [])];
   }

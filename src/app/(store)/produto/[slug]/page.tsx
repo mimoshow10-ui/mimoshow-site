@@ -30,12 +30,9 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
     const { data: pId } = await supabase.from('produtos').select('*').eq('id', raw).maybeSingle();
     if (pId) return pId;
 
-    // 3. Busca exata por código de barras ou SKU
+    // 3. Busca exata por código de barras ou SKU (campo codigo_barras)
     const { data: pBarra } = await supabase.from('produtos').select('*').eq('codigo_barras', raw).maybeSingle();
     if (pBarra) return pBarra;
-
-    const { data: pSku } = await supabase.from('produtos').select('*').eq('sku', raw).maybeSingle();
-    if (pSku) return pSku;
   } catch (err) {
     console.error('[PRODUTO LOOKUP] Erro no buscarProdutoMultiEstagio:', err);
   }
