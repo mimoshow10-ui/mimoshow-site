@@ -28,14 +28,20 @@ export default async function CategoriaPage({
   let subgrupos: any[] = [];
   let grupoPai: any = null;
 
+  const PROD_FIELDS = 'id, nome, slug, preco, preco_promocional, promocao_expira_em, imagens, codigo_barras, sku, ativo, categoria_id';
+
   if (slug === 'todas') {
-    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).order('criado_em', { ascending: false });
+    const { data } = await supabase
+      .from('produtos')
+      .select(PROD_FIELDS)
+      .eq('ativo', true)
+      .order('criado_em', { ascending: false })
+      .limit(80);
     if (data) produtos = data;
   } else if (catAtual) {
-    const { getCategoriasComProdutosAtivos } = await import('@/lib/categoria-vincular');
     const { data: allCategories } = await supabase
       .from('categorias')
-      .select('*')
+      .select('id, nome, slug, parent_id')
       .order('nome');
 
     const allCats = allCategories || [];
@@ -45,6 +51,7 @@ export default async function CategoriaPage({
       grupoPai = allCatsMap.get(catAtual.parent_id) || null;
     }
 
+    // Coleta todos os IDs da categoria e suas subcategorias
     function getDescendantIds(catId: string): string[] {
       const ids: string[] = [catId];
       const children = allCats.filter(c => c.parent_id === catId);
@@ -55,54 +62,17 @@ export default async function CategoriaPage({
     }
 
     const idsRelacionados = getDescendantIds(catAtual.id);
-    const directChildCats = allCats.filter(c => c.parent_id === catAtual.id);
+    subgrupos = allCats.filter(c => c.parent_id === catAtual.id);
 
-    if (directChildCats.length > 0) {
-      const activeRes = await getCategoriasComProdutosAtivos();
-      const activeCatIds = new Set(activeRes.all.map(c => c.id));
-      subgrupos = directChildCats.filter(s => activeCatIds.has(s.id));
-    }
+    // Consulta direta e ultra rápida dos produtos vinculados
+    const { data } = await supabase
+      .from('produtos')
+      .select(PROD_FIELDS)
+      .eq('ativo', true)
+      .in('categoria_id', idsRelacionados)
+      .order('criado_em', { ascending: false })
+      .limit(80);
 
-    // Buscar produtos com categorias adicionais vinculadas em configuracoes
-    let prodIdsAdicionais: string[] = [];
-    try {
-      const { data: cfgAdic1 } = await supabase
-        .from('configuracoes')
-        .select('valor')
-        .eq('chave', 'produtos_categorias_adicionais')
-        .maybeSingle();
-
-      const { data: cfgAdic2 } = await supabase
-        .from('configuracoes')
-        .select('valor')
-        .eq('chave', 'produto_categorias_map')
-        .maybeSingle();
-
-      const map1: Record<string, string[]> = cfgAdic1?.valor || {};
-      const map2: Record<string, string[]> = cfgAdic2?.valor || {};
-
-      for (const [pId, catIds] of Object.entries(map1)) {
-        if (Array.isArray(catIds) && catIds.some((cId: string) => idsRelacionados.includes(cId))) {
-          prodIdsAdicionais.push(pId);
-        }
-      }
-      for (const [pId, catIds] of Object.entries(map2)) {
-        if (Array.isArray(catIds) && catIds.some((cId: string) => idsRelacionados.includes(cId))) {
-          prodIdsAdicionais.push(pId);
-        }
-      }
-      prodIdsAdicionais = Array.from(new Set(prodIdsAdicionais));
-    } catch {}
-
-    let query = supabase.from('produtos').select('*').eq('ativo', true);
-
-    if (prodIdsAdicionais.length > 0) {
-      query = query.or(`categoria_id.in.(${idsRelacionados.join(',')}),id.in.(${prodIdsAdicionais.join(',')})`);
-    } else {
-      query = query.in('categoria_id', idsRelacionados);
-    }
-
-    const { data } = await query.order('criado_em', { ascending: false });
     if (data) produtos = data;
   }
 

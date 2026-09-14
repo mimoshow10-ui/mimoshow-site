@@ -27,7 +27,7 @@ export default async function AdminLayout({
           <h2 className="font-heading font-black text-xl text-amber-400 tracking-wide flex items-center gap-2">
             <span>🐾 Painel Admin</span>
           </h2>
-          <p className="text-xs text-blue-200 mt-1 font-semibold">Banho & Tosa Pet</p>
+          <p className="text-xs text-blue-200 mt-1 font-semibold">MIMO Show</p>
         </div>
         
         {/* Navegação Principal Rola Internamente */}
