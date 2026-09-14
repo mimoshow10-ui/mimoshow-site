@@ -335,34 +335,34 @@ export default async function EditarProduto(props: {
           </div>
         </div>
         
-        {/* ESTOQUE E BOTÃO DE OCULTAR NA VITRINE (VENDER COMO VARIAÇÃO) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
-          <div>
+        {/* BLOCO DE ESTOQUE E VISIBILIDADE NA TELA DE VENDAS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
             <label className="block text-xs font-bold text-gray-700 mb-1">Estoque Físico</label>
             <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-gray-300 rounded-xl p-2.5 bg-white text-sm font-bold text-gray-800" readOnly />
           </div>
 
-          <div className="md:col-span-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-amber-300 shadow-2xs">
+          <div className="md:col-span-2 bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-2xl border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-base">👁️‍🗨️</span>
-                <span className="text-xs font-black text-amber-950">Exibir Apenas como Variação na Família</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👁️‍🗨️</span>
+                <span className="text-sm font-black text-amber-950">Esconder da Vitrine (Vender como Variação)</span>
               </div>
-              <p className="text-[11px] text-amber-800 font-medium mt-0.5 leading-tight">
-                O produto fica <strong>100% ativo para vendas</strong> dentro da sua família, mas <strong>NÃO aparece como produto avulso</strong> na vitrine de categorias/busca.
+              <p className="text-xs text-amber-900 mt-1 leading-snug">
+                Marque para <strong>NÃO exibir este produto como um produto avulso/pai na tela de vendas</strong>. Ele continuará <strong>100% ativo</strong> para o cliente escolher dentro da Família de Variações.
               </p>
             </div>
 
-            <label className="flex items-center gap-2.5 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3.5 py-2 rounded-xl transition flex-shrink-0">
+            <label className="flex items-center gap-3 cursor-pointer bg-white hover:bg-amber-100/70 border-2 border-amber-400 px-4 py-3 rounded-2xl transition shadow-sm flex-shrink-0">
               <input
                 type="checkbox"
                 name="ocultar_na_vitrine"
                 defaultChecked={isOcultoVitrine}
                 value="true"
-                className="w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer accent-amber-600"
+                className="w-6 h-6 text-amber-600 rounded border-gray-400 focus:ring-amber-500 cursor-pointer accent-amber-600"
               />
-              <span className="text-xs font-black text-amber-950">
-                Ocultar na Vitrine (Apenas Variação)
+              <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                Ocultar na Vitrine
               </span>
             </label>
           </div>
