@@ -11,6 +11,10 @@ export default async function NovoProduto() {
   async function salvarProduto(formData: FormData) {
     'use server'
     const nome = formData.get('nome') as string;
+    const sku = ((formData.get('codigo_barras') || formData.get('sku')) as string || '').trim();
+    if (!sku) {
+      throw new Error('O SKU do produto é obrigatório.');
+    }
     const preco = parseFloat(formData.get('preco') as string || '0');
     const estoque = parseInt(formData.get('estoque') as string || '0');
     const categoria_id = (formData.get('categoria_id') as string) || null;
@@ -21,6 +25,7 @@ export default async function NovoProduto() {
     
     const { data: insertedPai } = await supabase.from('produtos').insert([{ 
       nome, 
+      codigo_barras: sku,
       preco, 
       estoque, 
       categoria_id, 
@@ -70,9 +75,15 @@ export default async function NovoProduto() {
       <h1 className="text-2xl font-bold mb-6 text-secondary">Cadastrar Novo Produto</h1>
       
       <form action={salvarProduto} className="flex flex-col gap-6">
-        <div>
-          <label className="block text-sm font-medium mb-1">Nome do Produto</label>
-          <input name="nome" type="text" required className="w-full border border-border rounded-lg p-2" />
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-1">Nome do Produto <span className="text-red-500">*</span></label>
+            <input name="nome" type="text" required className="w-full border border-border rounded-lg p-2" />
+          </div>
+          <div className="w-48">
+            <label className="block text-sm font-medium mb-1">Código SKU (Bling) <span className="text-red-500">*</span></label>
+            <input name="codigo_barras" type="text" required placeholder="Ex: MS5199" className="w-full border border-border rounded-lg p-2 font-mono font-bold" />
+          </div>
         </div>
         
         <div className="flex gap-4">

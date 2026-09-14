@@ -117,24 +117,30 @@ export async function POST(req: Request) {
             ? imagensBling
             : null;
 
+        const finalSku = (prodCompleto.codigo || prodCompleto.gtin || sku || '').trim();
+        if (!finalSku) {
+          resultados.push({ sku: sku || String(prodCompleto.id), status: 'erro', mensagem: 'Produto sem SKU no Bling. O SKU é obrigatório para cadastrar produtos.' });
+          continue;
+        }
+
         const { data: prodExistente } = await supabase.from('produtos').select('id, imagens').eq('bling_id', prodId).maybeSingle();
 
         if (prodExistente) {
           await supabase.from('produtos').update({
             preco: prodCompleto.preco,
             estoque: estoqueAtual,
-            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+            codigo_barras: finalSku,
             imagens: imagensFinais || prodExistente.imagens
           }).eq('id', prodExistente.id);
 
-          resultados.push({ sku: prodCompleto.codigo || sku, status: 'sucesso', nome: prodCompleto.nome });
+          resultados.push({ sku: finalSku, status: 'sucesso', nome: prodCompleto.nome });
         } else {
           const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           const slug = `${baseSlug}-${prodCompleto.id}`;
 
           const payload = {
             bling_id: prodId,
-            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+            codigo_barras: finalSku,
             nome: prodCompleto.nome,
             preco: prodCompleto.preco,
             estoque: estoqueAtual,
@@ -158,9 +164,9 @@ export async function POST(req: Request) {
             .single();
 
           if (error) {
-            resultados.push({ sku, status: 'erro', mensagem: error.message });
+            resultados.push({ sku: finalSku, status: 'erro', mensagem: error.message });
           } else {
-            resultados.push({ sku: inserted.codigo_barras || sku, status: 'sucesso', nome: inserted.nome });
+            resultados.push({ sku: inserted.codigo_barras || finalSku, status: 'sucesso', nome: inserted.nome });
           }
         }
       } catch (err: any) {

@@ -194,12 +194,17 @@ export async function importarSKU(formData: FormData) {
               imagensFinais = imagensBling.length > 0 ? imagensBling : null;
             }
 
+            const finalSku = (prodCompleto.codigo || prodCompleto.gtin || sku || '').trim();
+            if (!finalSku) {
+              return { success: false, error: `O produto '${prodCompleto.nome || prodId}' não possui código SKU cadastrado no Bling. O SKU é obrigatório.` };
+            }
+
             if (prodExistente) {
               const { error: updateErr } = await supabase.from('produtos').update({
                 nome: prodCompleto.nome || undefined,
                 preco: prodCompleto.preco,
                 estoque: estoqueAtual,
-                codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+                codigo_barras: finalSku,
                 imagens: imagensFinais || prodExistente.imagens,
                 ativo: prodCompleto.situacao === 'A'
               }).eq('id', prodExistente.id);
@@ -220,7 +225,7 @@ export async function importarSKU(formData: FormData) {
 
               const produtoParaInserir = {
                 bling_id: prodId,
-                codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+                codigo_barras: finalSku,
                 nome: prodCompleto.nome || `Produto ${prodId}`,
                 preco: prodCompleto.preco || 0,
                 estoque: estoqueAtual,

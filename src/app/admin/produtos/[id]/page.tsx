@@ -32,10 +32,10 @@ async function atualizarProduto(formData: FormData) {
   const video_url = formData.get('video_url') as string;
 
   // Extract related products
-  const relacionadosTxt = formData.get('relacionados') as string;
-  const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
-
-  const codigo_barras = formData.get('codigo_barras') as string;
+  const codigo_barras = ((formData.get('codigo_barras') || formData.get('sku')) as string || '').trim();
+  if (!codigo_barras) {
+    redirect(`/admin/produtos/${id}?erro=O SKU / Código de Barras é obrigatório.`);
+  }
 
   // Data de Início do Período de Promoção
   const promocao_inicio_em = formData.get('promocao_inicio_em') as string;
