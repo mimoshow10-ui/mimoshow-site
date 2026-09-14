@@ -29,7 +29,7 @@ export default async function CategoriaPage({
   let subgrupos: any[] = [];
   let grupoPai: any = null;
 
-  const PROD_FIELDS = 'id, nome, slug, preco, preco_promocional, promocao_expira_em, imagens, codigo_barras, sku, ativo, categoria_id';
+  const PROD_FIELDS = 'id, nome, slug, preco, preco_promocional, promocao_expira_em, imagens, codigo_barras, ativo, categoria_id';
 
   const ocultosVitrine = await getOcultosVitrine();
 
@@ -67,8 +67,8 @@ export default async function CategoriaPage({
     const idsRelacionados = getDescendantIds(catAtual.id);
     subgrupos = allCats.filter(c => c.parent_id === catAtual.id);
 
-    // Consulta direta e ultra rápida dos produtos vinculados
-    const { data } = await supabase
+    // 1. Consulta direta por categoria_id
+    const { data: directProds } = await supabase
       .from('produtos')
       .select(PROD_FIELDS)
       .eq('ativo', true)
@@ -76,7 +76,37 @@ export default async function CategoriaPage({
       .order('criado_em', { ascending: false })
       .limit(120);
 
-    if (data) produtos = data.filter(p => !ocultosVitrine.has(String(p.id)));
+    // 2. Consulta por produtos vinculados via categorias adicionais
+    let additionalProds: any[] = [];
+    try {
+      const { data: addCatDb } = await supabase
+        .from('configuracoes')
+        .select('valor')
+        .eq('chave', 'produtos_categorias_adicionais')
+        .maybeSingle();
+
+      const mapAdicionais: Record<string, string[]> = addCatDb?.valor || {};
+      const addProdIds: string[] = [];
+      for (const [prodId, catIds] of Object.entries(mapAdicionais)) {
+        if (Array.isArray(catIds) && idsRelacionados.some(id => catIds.includes(id))) {
+          addProdIds.push(prodId);
+        }
+      }
+
+      if (addProdIds.length > 0) {
+        const { data: addData } = await supabase
+          .from('produtos')
+          .select(PROD_FIELDS)
+          .eq('ativo', true)
+          .in('id', addProdIds.slice(0, 120));
+        if (addData) additionalProds = addData;
+      }
+    } catch {}
+
+    const todos = [...(directProds || []), ...additionalProds];
+    const unicos = Array.from(new Map(todos.map(p => [p.id, p])).values());
+
+    produtos = unicos.filter(p => !ocultosVitrine.has(String(p.id)));
   }
 
   const produtosFiltrados = produtos;
