@@ -335,36 +335,37 @@ export default async function EditarProduto(props: {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* ESTOQUE E BOTÃO DE OCULTAR NA VITRINE (VENDER COMO VARIAÇÃO) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
           <div>
-            <label className="block text-sm font-medium mb-1">Estoque Físico</label>
-            <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-border rounded-lg p-2 bg-gray-50" readOnly />
+            <label className="block text-xs font-bold text-gray-700 mb-1">Estoque Físico</label>
+            <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-gray-300 rounded-xl p-2.5 bg-white text-sm font-bold text-gray-800" readOnly />
           </div>
-        </div>
 
-        {/* CONTROLE DE EXIBIÇÃO NA VITRINE (ATIVO P/ VENDAS, MAS OCULTO NA VITRINE / SÓ COMO VARIAÇÃO) */}
-        <div className="bg-amber-50/80 border border-amber-200 p-4 md:p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">👁️‍🗨️</span>
-              <h3 className="text-sm font-black text-amber-950">Exibição na Vitrine da Loja</h3>
+          <div className="md:col-span-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-amber-300 shadow-2xs">
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">👁️‍🗨️</span>
+                <span className="text-xs font-black text-amber-950">Exibir Apenas como Variação na Família</span>
+              </div>
+              <p className="text-[11px] text-amber-800 font-medium mt-0.5 leading-tight">
+                O produto fica <strong>100% ativo para vendas</strong> dentro da sua família, mas <strong>NÃO aparece como produto avulso</strong> na vitrine de categorias/busca.
+              </p>
             </div>
-            <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
-              Quando ativado, este produto continua <strong>100% ativo para vendas</strong> e pode ser escolhido normalmente pelo cliente dentro de sua <strong>Família / Variações</strong>, porém <strong>NÃO aparecerá como um produto avulso</strong> na vitrine principal, categorias e pesquisa.
-            </p>
+
+            <label className="flex items-center gap-2.5 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3.5 py-2 rounded-xl transition flex-shrink-0">
+              <input
+                type="checkbox"
+                name="ocultar_na_vitrine"
+                defaultChecked={isOcultoVitrine}
+                value="true"
+                className="w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer accent-amber-600"
+              />
+              <span className="text-xs font-black text-amber-950">
+                Ocultar na Vitrine (Apenas Variação)
+              </span>
+            </label>
           </div>
-          <label className="flex items-center gap-3 cursor-pointer bg-white px-4 py-3 rounded-xl border border-amber-300 shadow-2xs hover:bg-amber-100/60 transition flex-shrink-0">
-            <input
-              type="checkbox"
-              name="ocultar_na_vitrine"
-              defaultChecked={isOcultoVitrine}
-              value="true"
-              className="w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer accent-amber-600"
-            />
-            <span className="text-xs font-black text-amber-950">
-              Ocultar na Vitrine (Vender apenas como Variação)
-            </span>
-          </label>
         </div>
 
         <div className="mt-6">
