@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
 import VariacaoManager from '@/components/VariacaoManager';
+import { extractImageUrls } from '@/components/ProductMediaGallery';
 import { getFamilyConfig } from '@/lib/familyManager';
 import { getOcultosVitrine, setProdutoOcultoVitrine } from '@/lib/vitrineManager';
 
@@ -212,22 +213,11 @@ export default async function EditarProduto(props: {
   const mapProds = new Map((familyRaw || []).map(p => [p.id, p]));
   const variacoes = memberIds.map(mId => mapProds.get(mId)).filter(Boolean) as any[];
 
-  // Todos os produtos para busca (só id, nome, sku, imagem, preco)
-  const { data: todosProdutosRaw } = await supabase
-    .from('produtos')
-    .select('id, nome, codigo_barras, imagens, preco')
-    .order('nome');
-  const todosProdutos = (todosProdutosRaw || []) as any[];
-
   if (!produto) {
     return <div className="p-8 font-bold text-red-600">Produto não encontrado!</div>;
   }
 
-  if (produto && produto.imagens) {
-    if (produto.imagens.length === 1 && typeof produto.imagens[0] === 'string' && produto.imagens[0].match(/[\r\n]/)) {
-      produto.imagens = produto.imagens[0].split(/[\r\n,]+/).map((s: string) => s.trim()).filter((s: string) => s);
-    }
-  }
+  const fotosProduto = extractImageUrls(produto.imagens);
 
   return (
     <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans space-y-6">
@@ -412,13 +402,13 @@ export default async function EditarProduto(props: {
           <VariacaoManager
             currentProdutoId={id}
             variacoesIniciais={variacoes}
-            todosProdutos={todosProdutos}
+            todosProdutos={[]}
           />
         </div>
 
         <div className="border-t border-border pt-6">
           <label className="block text-sm font-medium mb-3">Imagens do Anúncio (Primeira é a Capa)</label>
-          <ImageManager initialImages={produto.imagens || []} />
+          <ImageManager initialImages={fotosProduto} />
         </div>
 
         <div>
