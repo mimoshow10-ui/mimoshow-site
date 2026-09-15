@@ -1,170 +1,24 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
 import VariacaoManager from '@/components/VariacaoManager';
+import FormSubmitButton from '@/components/FormSubmitButton';
 import { extractImageUrls } from '@/components/ProductMediaGallery';
 import { getFamilyConfig } from '@/lib/familyManager';
-import { getOcultosVitrine, setProdutoOcultoVitrine } from '@/lib/vitrineManager';
+import { getOcultosVitrine } from '@/lib/vitrineManager';
+import { atualizarProduto } from '../actions';
 
-async function atualizarProduto(formData: FormData) {
-  'use server'
-  const id = formData.get('id') as string;
-  const nome = (formData.get('nome') as string || '').trim();
-  
-  const preco_raw = (formData.get('preco') as string || '0').replace(/[^0-9.,]/g, '').replace(',', '.');
-  const preco = parseFloat(preco_raw) || 0;
-  
-  const preco_promocional_raw = (formData.get('preco_promocional') as string || '').replace(/[^0-9.,]/g, '').replace(',', '.');
-  const preco_promocional = preco_promocional_raw ? parseFloat(preco_promocional_raw) || null : null;
-
-  const estoque_raw = (formData.get('estoque') as string || '0').replace(/[^0-9]/g, '');
-  const estoque = parseInt(estoque_raw, 10) || 0;
-
-  const categoria_id = (formData.get('categoria_id') as string) || null;
-  
-  // Convert imagens textarea content to array
-  const imagensTxt = formData.get('imagens') as string;
-  const imagensArr = imagensTxt ? imagensTxt.split(/[\r\n,]+/).map(s => s.trim()).filter(s => s) : [];
-  
-  // Video URL
-  const video_url = formData.get('video_url') as string;
-
-  // Extract related products
-  const relacionadosTxt = (formData.get('relacionados') as string) || '';
-  const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
-
-  const codigo_barras = ((formData.get('codigo_barras') || formData.get('sku')) as string || '').trim();
-  if (!codigo_barras) {
-    redirect(`/admin/produtos/${id}?erro=O SKU / Código de Barras é obrigatório.`);
-  }
-
-  // Data de Início do Período de Promoção
-  const promocao_inicio_em = formData.get('promocao_inicio_em') as string;
-  let inicioIso = null;
-  if (promocao_inicio_em) {
-    const dateStr = promocao_inicio_em.length === 16 ? `${promocao_inicio_em}:00-03:00` : promocao_inicio_em;
-    inicioIso = new Date(dateStr).toISOString();
-  }
-
-  // Data de Fim do Período de Promoção
-  const promocao_expira_em = formData.get('promocao_expira_em') as string;
-  let expiraIso = null;
-  if (promocao_expira_em) {
-    const dateStr = promocao_expira_em.length === 16 ? `${promocao_expira_em}:00-03:00` : promocao_expira_em;
-    expiraIso = new Date(dateStr).toISOString();
-  }
-
-  const destaque_home = formData.get('destaque_home') as string;
-  const isSuperPromo = destaque_home === 'super_promocao';
-
-  const payload: any = { 
-    nome, 
-    codigo_barras,
-    preco, 
-    preco_promocional,
-    estoque, 
-    video_url: video_url || null,
-    categoria_id: categoria_id || null, 
-    imagens: imagensArr.length > 0 ? imagensArr : null,
-    produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
-    destaque_super_promocao: isSuperPromo,
-    promocao_expira_em: expiraIso
-  };
-
-  if (inicioIso) {
-    payload.promocao_inicio_em = inicioIso;
-  }
-
-  let { error } = await supabase.from('produtos').update(payload).eq('id', id);
-  
-  // Resiliência de esquema: caso o banco não tenha certas colunas opcionais, remove e retenta
-  while (error && (error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
-    const match = error.message && error.message.match(/Could not find the '([^']+)' column/);
-    if (match && match[1] && match[1] in payload) {
-      delete payload[match[1]];
-      const res = await supabase.from('produtos').update(payload).eq('id', id);
-      error = res.error;
-    } else {
-      break;
-    }
-  }
-
-  if (error) {
-    redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
-  }
-
-  // Salvar Visibilidade na Vitrine (Oculto da Vitrine / Apenas Variação)
+function formatDatetimeLocal(val: string | null | undefined): string {
+  if (!val) return '';
   try {
-    const ocultar_na_vitrine = formData.get('ocultar_na_vitrine') === 'true';
-    await setProdutoOcultoVitrine(id, ocultar_na_vitrine);
-  } catch (errVitrine) {
-    console.error('Erro ao atualizar visibilidade na vitrine:', errVitrine);
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return new Date(d.getTime() - 3 * 3600 * 1000).toISOString().slice(0, 16);
+  } catch {
+    return '';
   }
-
-  // Salvar Categorias Adicionais em configuracoes
-  try {
-    const categorias_adicionais_str = formData.get('categorias_adicionais') as string;
-    const adicionaisArr: string[] = categorias_adicionais_str ? JSON.parse(categorias_adicionais_str) : [];
-    
-    const { data: currentCatMap } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
-    let mapAtual = currentCatMap?.valor || {};
-    mapAtual[id] = adicionaisArr;
-
-    await supabase.from('configuracoes').upsert({
-      chave: 'produtos_categorias_adicionais',
-      valor: mapAtual
-    }, { onConflict: 'chave' });
-  } catch (err) {
-    console.error("Erro ao salvar categorias adicionais:", err);
-  }
-
-  // Atualizar listas de destaques da Home em configuracoes
-  try {
-    const { data: configCurrent } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
-    let valorAtual = configCurrent?.valor || { mais_vendidos: [], novidades: [] };
-
-    let mvList: string[] = (valorAtual.mais_vendidos || []).filter((prodId: string) => prodId !== id);
-    let novList: string[] = (valorAtual.novidades || []).filter((prodId: string) => prodId !== id);
-
-    if (destaque_home === 'mais_vendidos') {
-      mvList.unshift(id);
-    } else if (destaque_home === 'lancamento') {
-      novList.unshift(id);
-    }
-
-    await supabase.from('configuracoes').upsert({
-      chave: 'vitrine_destaques',
-      valor: {
-        mais_vendidos: Array.from(new Set(mvList)),
-        novidades: Array.from(new Set(novList))
-      }
-    }, { onConflict: 'chave' });
-  } catch {}
-
-  revalidatePath('/admin/produtos');
-  revalidatePath('/');
-  
-  const ret_params = (formData.get('ret_params') as string) || '';
-
-  const { data: prodExistente } = await supabase.from('produtos').select('slug').eq('id', id).single();
-  if (prodExistente) {
-    revalidatePath(`/produto/${prodExistente.slug}`);
-  }
-
-  if (categoria_id) {
-    const { data: cat } = await supabase.from('categorias').select('slug').eq('id', categoria_id).single();
-    if (cat) revalidatePath(`/categoria/${cat.slug}`);
-  }
-  
-  const p = new URLSearchParams(ret_params);
-  p.set('msg', 'Produto atualizado com sucesso!');
-  redirect(`/admin/produtos?${p.toString()}`);
 }
-
-import FormSubmitButton from '@/components/FormSubmitButton';
 
 export default async function EditarProduto(props: {
   params: Promise<{ id: string }>;
@@ -172,82 +26,101 @@ export default async function EditarProduto(props: {
 }) {
   const { id } = await props.params;
   const searchParams = await props.searchParams;
-  const retParams = searchParams.ret || '';
-  const erroMsg = searchParams.erro || '';
-  const okMsg = searchParams.msg || '';
+  const retParams = searchParams?.ret || '';
+  const erroMsg = searchParams?.erro || '';
+  const okMsg = searchParams?.msg || '';
 
-  const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
-  const { data: categorias } = await supabase.from('categorias').select('*');
-  const { data: configDestaques } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
-  const valorDestaques = configDestaques?.valor || { mais_vendidos: [], novidades: [] };
+  try {
+    const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
+    const { data: categorias } = await supabase.from('categorias').select('*');
+    const { data: configDestaques } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
+    const valorDestaques = configDestaques?.valor || { mais_vendidos: [], novidades: [] };
 
-  const { data: configAdicionais } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
-  const adicionaisIniciais: string[] = configAdicionais?.valor?.[id] || [];
+    const { data: configAdicionais } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
+    const adicionaisIniciais: string[] = Array.isArray(configAdicionais?.valor?.[id]) ? configAdicionais.valor[id] : [];
 
-  const ocultosSet = await getOcultosVitrine();
-  const isOcultoVitrine = ocultosSet.has(String(id));
+    const ocultosSet = await getOcultosVitrine();
+    const isOcultoVitrine = ocultosSet.has(String(id));
 
-  let destaqueInicial = 'nenhum';
-  if (produto?.destaque_super_promocao) {
-    destaqueInicial = 'super_promocao';
-  } else if (Array.isArray(valorDestaques.mais_vendidos) && valorDestaques.mais_vendidos.includes(id)) {
-    destaqueInicial = 'mais_vendidos';
-  } else if (Array.isArray(valorDestaques.novidades) && valorDestaques.novidades.includes(id)) {
-    destaqueInicial = 'lancamento';
-  }
+    let destaqueInicial = 'nenhum';
+    if (produto?.destaque_super_promocao) {
+      destaqueInicial = 'super_promocao';
+    } else if (Array.isArray(valorDestaques?.mais_vendidos) && valorDestaques.mais_vendidos.includes(id)) {
+      destaqueInicial = 'mais_vendidos';
+    } else if (Array.isArray(valorDestaques?.novidades) && valorDestaques.novidades.includes(id)) {
+      destaqueInicial = 'lancamento';
+    }
 
-  // Buscar família permanente do produto via familyManager
-  const familyConfig = await getFamilyConfig();
-  const activeFamilyId = familyConfig.productToFamilyMap[id];
-  const familyData = activeFamilyId ? familyConfig.familias[activeFamilyId] : null;
+    // Buscar família permanente do produto via familyManager
+    const familyConfig = await getFamilyConfig();
+    const activeFamilyId = familyConfig?.productToFamilyMap ? familyConfig.productToFamilyMap[id] : null;
+    const familyData = (activeFamilyId && familyConfig?.familias) ? familyConfig.familias[activeFamilyId] : null;
 
-  let memberIds: string[] = [];
-  if (familyData && Array.isArray(familyData.members) && familyData.members.length > 0) {
-    memberIds = familyData.members;
-  } else {
-    memberIds = [id];
-  }
+    let memberIds: string[] = [];
+    if (familyData && Array.isArray(familyData.members) && familyData.members.length > 0) {
+      memberIds = familyData.members;
+    } else {
+      memberIds = [id];
+    }
 
-  const { data: familyRaw } = await supabase
-    .from('produtos')
-    .select('id, nome, codigo_barras, imagens, preco, parent_id')
-    .in('id', memberIds);
+    const { data: familyRaw } = await supabase
+      .from('produtos')
+      .select('id, nome, codigo_barras, imagens, preco, parent_id')
+      .in('id', memberIds);
 
-  const mapProds = new Map((familyRaw || []).map(p => [p.id, p]));
-  const variacoes = memberIds.map(mId => mapProds.get(mId)).filter(Boolean) as any[];
+    const mapProds = new Map((familyRaw || []).map(p => [p.id, p]));
+    const variacoes = memberIds.map(mId => mapProds.get(mId)).filter(Boolean) as any[];
 
-  if (!produto) {
-    return <div className="p-8 font-bold text-red-600">Produto não encontrado!</div>;
-  }
-
-  const fotosProduto = extractImageUrls(produto.imagens);
-
-  return (
-    <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans space-y-6">
-      <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-        <h1 className="text-2xl font-bold text-secondary">Editar Produto</h1>
-        <Link
-          href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
-          className="text-xs font-bold text-gray-600 hover:text-primary transition bg-gray-100 px-4 py-2 rounded-xl border border-gray-200"
-        >
-          &larr; Voltar para os Produtos
-        </Link>
-      </div>
-
-      {erroMsg && (
-        <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-2xl font-bold text-xs">
-          ❌ {erroMsg}
+    if (!produto) {
+      return (
+        <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-red-200 font-sans space-y-4">
+          <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+            <h1 className="text-xl font-bold text-red-600">Produto não encontrado</h1>
+            <Link
+              href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
+              className="text-xs font-bold text-gray-600 hover:text-primary transition bg-gray-100 px-4 py-2 rounded-xl border border-gray-200"
+            >
+              &larr; Voltar para os Produtos
+            </Link>
+          </div>
+          <p className="text-sm text-gray-600">
+            O produto com ID <code className="bg-gray-100 px-2 py-1 rounded text-xs">{id}</code> não foi localizado no banco de dados.
+          </p>
         </div>
-      )}
+      );
+    }
 
-      {okMsg && (
-        <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-2xl font-bold text-xs">
-          ✅ {okMsg}
+    const fotosProduto = extractImageUrls(produto.imagens);
+    const relacionadosStr = Array.isArray(produto.produtos_relacionados)
+      ? produto.produtos_relacionados.join(', ')
+      : (typeof produto.produtos_relacionados === 'string' ? produto.produtos_relacionados : '');
+
+    return (
+      <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans space-y-6">
+        <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+          <h1 className="text-2xl font-bold text-secondary">Editar Produto</h1>
+          <Link
+            href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
+            className="text-xs font-bold text-gray-600 hover:text-primary transition bg-gray-100 px-4 py-2 rounded-xl border border-gray-200"
+          >
+            &larr; Voltar para os Produtos
+          </Link>
         </div>
-      )}
-      
-      <form action={atualizarProduto} className="flex flex-col gap-6">
-        <input type="hidden" name="id" value={id} />
+
+        {erroMsg && (
+          <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-2xl font-bold text-xs">
+            ❌ {erroMsg}
+          </div>
+        )}
+
+        {okMsg && (
+          <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-2xl font-bold text-xs">
+            ✅ {okMsg}
+          </div>
+        )}
+        
+        <form action={atualizarProduto} className="flex flex-col gap-6">
+          <input type="hidden" name="id" value={id} />
         <input type="hidden" name="ret_params" value={retParams} />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-3">
@@ -294,7 +167,7 @@ export default async function EditarProduto(props: {
             <input
               name="promocao_inicio_em"
               type="datetime-local"
-              defaultValue={produto.promocao_inicio_em ? new Date(new Date(produto.promocao_inicio_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''}
+              defaultValue={formatDatetimeLocal(produto.promocao_inicio_em)}
               className="w-full border border-green-300 rounded-xl p-2.5 h-11 text-xs font-bold text-green-800 focus:ring-2 focus:ring-green-500 focus:outline-none bg-white"
             />
           </div>
@@ -306,7 +179,7 @@ export default async function EditarProduto(props: {
             <input
               name="promocao_expira_em"
               type="datetime-local"
-              defaultValue={produto.promocao_expira_em ? new Date(new Date(produto.promocao_expira_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''}
+              defaultValue={formatDatetimeLocal(produto.promocao_expira_em)}
               className="w-full border border-red-300 rounded-xl p-2.5 h-11 text-xs font-bold text-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white"
             />
           </div>
@@ -387,7 +260,7 @@ export default async function EditarProduto(props: {
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1">Dimensões (L x A x P)</label>
-              <input type="text" readOnly defaultValue={`${produto.largura} x ${produto.altura} x ${produto.profundidade}`} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+              <input type="text" readOnly defaultValue={`${produto.largura ?? ''} x ${produto.altura ?? ''} x ${produto.profundidade ?? ''}`} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1">NCM</label>
@@ -432,7 +305,7 @@ export default async function EditarProduto(props: {
             name="relacionados" 
             type="text" 
             placeholder="IDs dos produtos separados por vírgula" 
-            defaultValue={produto.produtos_relacionados ? produto.produtos_relacionados.join(', ') : ''} 
+            defaultValue={relacionadosStr} 
             className="w-full border border-border rounded-lg p-2" 
           />
           <p className="text-xs text-gray-500 mt-1">IDs dos produtos que aparecerão na seção "Compre Junto".</p>
@@ -444,4 +317,23 @@ export default async function EditarProduto(props: {
       </form>
     </div>
   );
+  } catch (err: any) {
+    console.error('Erro ao renderizar EditarProduto:', err);
+    return (
+      <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-red-200 font-sans space-y-4">
+        <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+          <h1 className="text-xl font-bold text-red-600">Erro ao carregar produto</h1>
+          <Link
+            href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
+            className="text-xs font-bold text-gray-600 hover:text-primary transition bg-gray-100 px-4 py-2 rounded-xl border border-gray-200"
+          >
+            &larr; Voltar para os Produtos
+          </Link>
+        </div>
+        <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-800 text-xs font-bold">
+          {err?.message || 'Falha inesperada ao consultar os dados deste produto.'}
+        </div>
+      </div>
+    );
+  }
 }
