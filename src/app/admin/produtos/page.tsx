@@ -75,30 +75,19 @@ export default async function AdminProdutos(props: {
       ? [subgrupo_id]
       : [grupo_id, ...(todasCategorias || []).filter(c => c.parent_id === grupo_id).map(c => c.id)];
 
-    const matchingIds = new Set<string>();
-
-    // 1. Produtos com categoria_id direta
-    const { data: directProds } = await supabase
-      .from('produtos')
-      .select('id')
-      .in('categoria_id', targetCatIds);
-
-    (directProds || []).forEach(p => matchingIds.add(p.id));
-
-    // 2. Produtos vinculados nas categorias adicionais
+    const addProdIds: string[] = [];
     for (const [pId, catIdsArr] of Object.entries(adicionaisMap)) {
       if (Array.isArray(catIdsArr) && catIdsArr.some(cId => targetCatIds.includes(cId))) {
-        matchingIds.add(pId);
+        addProdIds.push(pId);
       }
     }
 
-    const finalCatProdIds = Array.from(matchingIds);
-    if (finalCatProdIds.length > 0) {
-      countQuery = countQuery.in('id', finalCatProdIds);
-      query = query.in('id', finalCatProdIds);
+    if (addProdIds.length > 0 && addProdIds.length <= 100) {
+      countQuery = countQuery.or(`categoria_id.in.(${targetCatIds.join(',')}),id.in.(${addProdIds.join(',')})`);
+      query = query.or(`categoria_id.in.(${targetCatIds.join(',')}),id.in.(${addProdIds.join(',')})`);
     } else {
-      countQuery = countQuery.eq('id', '00000000-0000-0000-0000-000000000000');
-      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+      countQuery = countQuery.in('categoria_id', targetCatIds);
+      query = query.in('categoria_id', targetCatIds);
     }
   }
 

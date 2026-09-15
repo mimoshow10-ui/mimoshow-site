@@ -74,7 +74,7 @@ export default async function CategoriaPage({
       .eq('ativo', true)
       .in('categoria_id', idsRelacionados)
       .order('criado_em', { ascending: false })
-      .limit(120);
+      .limit(1000);
 
     // 2. Consulta por produtos vinculados via categorias adicionais
     let additionalProds: any[] = [];
@@ -98,7 +98,7 @@ export default async function CategoriaPage({
           .from('produtos')
           .select(PROD_FIELDS)
           .eq('ativo', true)
-          .in('id', addProdIds.slice(0, 120));
+          .in('id', addProdIds.slice(0, 500));
         if (addData) additionalProds = addData;
       }
     } catch {}
