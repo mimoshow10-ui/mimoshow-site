@@ -21,16 +21,21 @@ function formatDatetimeLocal(val: string | null | undefined): string {
 }
 
 export default async function EditarProduto(props: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ ret?: string; erro?: string; msg?: string }>;
+  params: Promise<{ id: string }> | { id: string };
+  searchParams: Promise<{ ret?: string; erro?: string; msg?: string }> | { ret?: string; erro?: string; msg?: string };
 }) {
-  const { id } = await props.params;
-  const searchParams = await props.searchParams;
-  const retParams = searchParams?.ret || '';
-  const erroMsg = searchParams?.erro || '';
-  const okMsg = searchParams?.msg || '';
+  let id = '';
+  let retParams = '';
+  let erroMsg = '';
+  let okMsg = '';
 
   try {
+    const resolvedParams = props?.params ? await props.params : (props as any);
+    id = resolvedParams?.id || '';
+    const resolvedSearch = props?.searchParams ? await props.searchParams : (props as any)?.searchParams || {};
+    retParams = resolvedSearch?.ret || '';
+    erroMsg = resolvedSearch?.erro || '';
+    okMsg = resolvedSearch?.msg || '';
     const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
     const { data: categorias } = await supabase.from('categorias').select('*');
     const { data: configDestaques } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
