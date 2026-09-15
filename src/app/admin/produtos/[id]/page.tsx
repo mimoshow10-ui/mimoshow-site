@@ -4,7 +4,7 @@ import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
 import VariacaoManager from '@/components/VariacaoManager';
 import FormSubmitButton from '@/components/FormSubmitButton';
-import { extractImageUrls } from '@/components/ProductMediaGallery';
+import { extractImageUrls } from '@/lib/imageExtractor';
 import { getFamilyConfig } from '@/lib/familyManager';
 import { getOcultosVitrine } from '@/lib/vitrineManager';
 import { atualizarProduto } from '../actions';
