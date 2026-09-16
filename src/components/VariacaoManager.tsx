@@ -74,8 +74,12 @@ export default function VariacaoManager({
     if (selfId && p.id === selfId) return false;
     if (Array.isArray(grupo) && grupo.some((g) => g && g.id === p.id)) return false;
 
+    // Se veio do endpoint de busca em tempo real, o servidor já filtrou perfeitamente
+    if (resultadosBusca.length > 0) return true;
+
+    const queryNorm = busca.toLowerCase().replace(/[\s\-_]+/g, '');
     const nomeMatch = (p.nome || '').toLowerCase().includes(busca.toLowerCase());
-    const skuMatch = (p.codigo_barras || '').toLowerCase().includes(busca.toLowerCase());
+    const skuMatch = (p.codigo_barras || '').toLowerCase().replace(/[\s\-_]+/g, '').includes(queryNorm);
     return nomeMatch || skuMatch;
   });
 

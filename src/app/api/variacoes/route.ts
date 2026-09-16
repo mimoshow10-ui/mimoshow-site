@@ -11,16 +11,34 @@ import {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const q = (searchParams.get('q') || '').trim();
+    const rawQ = (searchParams.get('q') || '').trim();
 
-    if (!q || q.length < 2) {
+    if (!rawQ || rawQ.length < 2) {
       return NextResponse.json({ produtos: [] });
+    }
+
+    const qClean = rawQ.replace(/[\s\-_]+/g, '');
+    const numOnly = rawQ.replace(/\D/g, '');
+
+    const filters: string[] = [
+      `nome.ilike.%${rawQ}%`,
+      `codigo_barras.ilike.%${rawQ}%`,
+    ];
+
+    if (qClean && qClean !== rawQ) {
+      filters.push(`codigo_barras.ilike.%${qClean}%`);
+      filters.push(`nome.ilike.%${qClean}%`);
+    }
+
+    if (numOnly.length >= 3 && numOnly !== rawQ && numOnly !== qClean) {
+      filters.push(`codigo_barras.ilike.%${numOnly}%`);
+      filters.push(`bling_id.eq.${numOnly}`);
     }
 
     const { data: produtos, error } = await supabase
       .from('produtos')
       .select('id, nome, codigo_barras, imagens, preco, parent_id')
-      .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`)
+      .or(filters.join(','))
       .limit(50);
 
     if (error) {
