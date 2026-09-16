@@ -47,10 +47,24 @@ export default async function AdminProdutos(props: {
   let countQuery = supabase.from('produtos').select('*', { count: 'exact', head: true });
   let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome');
 
-  // Search by name, SKU or barcode
+  // Smart Search by name, SKU or barcode
   if (q) {
-    countQuery = countQuery.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
-    query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
+    const qClean = q.replace(/[\s\-_]+/g, '');
+    const numOnly = q.replace(/\D/g, '');
+    const filters = [`nome.ilike.%${q}%`, `codigo_barras.ilike.%${q}%`];
+
+    if (qClean && qClean !== q) {
+      filters.push(`codigo_barras.ilike.%${qClean}%`);
+      filters.push(`nome.ilike.%${qClean}%`);
+    }
+    if (numOnly.length >= 3 && numOnly !== q && numOnly !== qClean) {
+      filters.push(`codigo_barras.ilike.%${numOnly}%`);
+      filters.push(`bling_id.eq.${numOnly}`);
+    }
+
+    const orQuery = filters.join(',');
+    countQuery = countQuery.or(orQuery);
+    query = query.or(orQuery);
   }
 
   // Buscar ambos os mapas de categorias adicionais em configuracoes
