@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Play } from 'lucide-react';
 import { extractImageUrls } from '@/lib/imageExtractor';
 
-export { extractImageUrls };
+
 
 interface Props {
   imagens: any;

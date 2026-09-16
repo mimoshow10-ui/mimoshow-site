@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import CountdownTimer from './CountdownTimer';
-import { extractImageUrls } from './ProductMediaGallery';
+import { extractImageUrls } from '@/lib/imageExtractor';
 
 interface ProdutoCardProps {
   produto: {

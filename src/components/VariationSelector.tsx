@@ -1,6 +1,6 @@
 'use client'
 
-import { extractImageUrls } from './ProductMediaGallery';
+import { extractImageUrls } from '@/lib/imageExtractor';
 import { ordenarProdutosPorQuantidade } from '@/lib/quantityExtractor';
 
 export default function VariationSelector({
