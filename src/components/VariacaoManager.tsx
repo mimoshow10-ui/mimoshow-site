@@ -71,8 +71,9 @@ export default function VariacaoManager({
 
   const disponiveis = prods.filter((p) => {
     if (!p || !p.id) return false;
-    if (selfId && p.id === selfId) return false;
-    if (Array.isArray(grupo) && grupo.some((g) => g && g.id === p.id)) return false;
+    
+    // Removida a restrição que ocultava produtos já inseridos ou o próprio produto,
+    // pois o lojista deseja que a barra funcione para confirmar a busca independentemente do vínculo.
 
     // Se veio do endpoint de busca em tempo real, o servidor já filtrou perfeitamente
     if (resultadosBusca.length > 0) return true;
@@ -121,11 +122,17 @@ export default function VariacaoManager({
         body: JSON.stringify({ targetProductId: selfId, newMemberId: novoMembro.id }),
       });
       if (res.ok) {
-        const novoGrupo = [...(grupo || []), novoMembro];
-        setGrupo(novoGrupo);
-        setBusca('');
-        setMsg('Produto adicionado à família!');
-        reordenarServidor(novoGrupo);
+        const jaExiste = grupo?.some(g => g.id === novoMembro.id) || selfId === novoMembro.id;
+        if (jaExiste) {
+          setBusca('');
+          setMsg('Este produto já está vinculado nesta família.');
+        } else {
+          const novoGrupo = [...(grupo || []), novoMembro];
+          setGrupo(novoGrupo);
+          setBusca('');
+          setMsg('Produto adicionado à família!');
+          reordenarServidor(novoGrupo);
+        }
       } else {
         const j = await res.json();
         setMsg('Erro: ' + (j.error || j.erro || 'Falha ao vincular'));
