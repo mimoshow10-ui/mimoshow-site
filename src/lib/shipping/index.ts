@@ -101,7 +101,15 @@ export async function calcularFretesCarrinho(
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
-          const validos = data.filter((opt: any) => !opt.error && (opt.price || opt.custom_price));
+          const validos = data.filter((opt: any) => {
+            if (opt.error || !(opt.price || opt.custom_price)) return false;
+            
+            // Filtrar apenas transportadoras solicitadas pelo cliente
+            const nomeStr = `${opt.company?.name || ''} ${opt.name || ''}`.toLowerCase();
+            const permitidas = ['correios', 'sedex', 'pac', 'jadlog', 'jad log', 'jad', 'loggi', 'j&t', 'j&d'];
+            
+            return permitidas.some(p => nomeStr.includes(p));
+          });
 
           if (validos.length > 0) {
             cotouMelhorEnvioComSucesso = true;
