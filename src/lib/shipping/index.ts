@@ -106,7 +106,7 @@ export async function calcularFretesCarrinho(
             
             // Filtrar apenas transportadoras solicitadas pelo cliente
             const nomeStr = `${opt.company?.name || ''} ${opt.name || ''}`.toLowerCase();
-            const permitidas = ['correios', 'sedex', 'pac', 'jadlog', 'jad log', 'jad', 'loggi', 'j&t', 'j&d'];
+            const permitidas = ['correios', 'sedex', 'pac', 'jadlog', 'jad log', 'jad', 'loggi', 'j&t', 'j&d', 'jet'];
             
             return permitidas.some(p => nomeStr.includes(p));
           });
