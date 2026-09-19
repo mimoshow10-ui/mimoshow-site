@@ -101,32 +101,52 @@ export async function calcularFretesCarrinho(
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
-          const validos = data.filter((opt: any) => {
-            if (opt.error || !(opt.price || opt.custom_price)) return false;
-            
-            // Filtrar apenas transportadoras solicitadas pelo cliente
-            const nomeStr = `${opt.company?.name || ''} ${opt.name || ''}`.toLowerCase();
-            const permitidas = ['correios', 'sedex', 'pac', 'jadlog', 'jad log', 'jad', 'loggi', 'j&t', 'j&d', 'jet'];
-            
-            return permitidas.some(p => nomeStr.includes(p));
-          });
+          const validos = data.filter((opt: any) => !opt.error && (opt.price || opt.custom_price));
 
           if (validos.length > 0) {
             cotouMelhorEnvioComSucesso = true;
+            
+            // Agrupar para pegar apenas a opcao mais barata de cada uma que o cliente pediu
+            const agrupados: Record<string, any> = {};
+
             for (const opt of validos) {
+              const companyName = (opt.company?.name || '').toLowerCase();
+              const serviceName = (opt.name || '').toLowerCase();
+              let categoria = '';
+
+              if (companyName.includes('correios')) {
+                categoria = serviceName.includes('sedex') ? 'Correios (SEDEX)' : 'Correios (PAC)';
+              } else if (companyName.includes('jadlog') || companyName.includes('jad log') || companyName.includes('jad')) {
+                categoria = 'Jadlog';
+              } else if (companyName.includes('loggi')) {
+                categoria = 'Loggi';
+              } else if (companyName.includes('j&t') || companyName.includes('j&d') || companyName.includes('jet')) {
+                categoria = 'J&T Express';
+              }
+
+              if (categoria) {
+                const preco = Number(opt.custom_price || opt.price || 0);
+                if (!agrupados[categoria] || preco < Number(agrupados[categoria].custom_price || agrupados[categoria].price || 0)) {
+                  agrupados[categoria] = { ...opt, categoriaCustom: categoria };
+                }
+              }
+            }
+
+            for (const key in agrupados) {
+              const opt = agrupados[key];
               const precoBase = Number(opt.custom_price || opt.price || 0);
               const prazo = Number(opt.custom_delivery_time || opt.delivery_time || 1);
               const isFreteGratis = valorTotalProdutos >= 99; // Regra de Frete Gratis acima de R$ 99
 
               opcoes.push({
-                id: `melhor-${opt.company?.name || 'trans'}-${opt.id}`,
+                id: `melhor-${opt.id}`,
                 transportadora_id: `melhorenvio-${opt.id}`,
-                nome: `${opt.company?.name || 'Transportadora'} (${opt.name})`,
-                nome_transportadora: opt.company?.name || 'Melhor Envio',
+                nome: opt.categoriaCustom,
+                nome_transportadora: opt.categoriaCustom,
                 valor: isFreteGratis ? 0 : Math.max(0, precoBase),
                 prazo_dias: prazo,
                 prazo_estimado_texto: `Chegará em ${prazo} a ${prazo + 2} dias úteis`,
-                descricao: isFreteGratis ? 'Promoção de Frete Grátis aplicada!' : `Cotação oficial via ${opt.company?.name || 'Melhor Envio'}`,
+                descricao: isFreteGratis ? 'Promoção de Frete Grátis aplicada!' : `Cotação oficial via ${opt.categoriaCustom}`,
                 is_gratis: isFreteGratis,
               });
             }
