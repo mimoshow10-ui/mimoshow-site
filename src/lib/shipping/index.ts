@@ -63,9 +63,9 @@ export async function calcularFretesCarrinho(
       nome: 'Retirada na Loja Física',
       nome_transportadora: 'Loja Física',
       valor: 0,
-      prazo_dias: 0,
-      prazo_estimado_texto: 'Pronto para retirada após confirmação',
-      descricao: 'Retire gratuitamente em nossa loja física.',
+      prazo_dias: 1,
+      prazo_estimado_texto: '1 dia útil após confirmação do pagamento',
+      descricao: 'A mercadoria fica disponível para retirada 1 dia útil após a confirmação do pagamento.',
       is_gratis: true,
     });
   }
