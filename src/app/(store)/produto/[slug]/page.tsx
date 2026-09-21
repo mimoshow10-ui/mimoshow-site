@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const rawDesc = String(produto.seo_description || produto.descricao_curta || `Compre ${produto.nome || 'produtos'} no MIMO Show!`);
     const description = rawDesc.replace(/<[^>]*>?/gm, '').replace(/[\r\n]+/g, ' ').slice(0, 160).trim();
 
-    let imagem = '/logo-luxo.png';
+    let imagem = '/logo-mimoshow.png';
     try {
       const fotos = extractImageUrls(produto.imagens);
       if (fotos.length > 0) imagem = fotos[0];
