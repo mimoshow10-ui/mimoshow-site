@@ -21,11 +21,30 @@ export default async function BuscaPage({
   const ocultosVitrine = await getOcultosVitrine();
 
   if (q) {
+    const qClean = q.replace(/[\s\-_]+/g, '');
+    const numOnly = q.replace(/\D/g, '');
+    
+    const filters = [
+      `nome.ilike.%${q}%`,
+      `codigo_barras.ilike.%${q}%`,
+      `descricao.ilike.%${q}%`
+    ];
+
+    if (qClean && qClean !== q) {
+      filters.push(`codigo_barras.ilike.%${qClean}%`);
+      filters.push(`nome.ilike.%${qClean}%`);
+    }
+    if (numOnly.length >= 3 && numOnly !== q && numOnly !== qClean) {
+      filters.push(`codigo_barras.ilike.%${numOnly}%`);
+    }
+
+    const orQuery = filters.join(',');
+
     const { data } = await supabase
       .from('produtos')
       .select('*')
       .eq('ativo', true)
-      .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
+      .or(orQuery)
       .order('criado_em', { ascending: false });
 
     if (data) {

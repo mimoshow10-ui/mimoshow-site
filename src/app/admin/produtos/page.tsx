@@ -141,9 +141,27 @@ export default async function AdminProdutos(props: {
     query = query.eq('ativo', false);
   }
 
-  const { count: totalNoBanco } = await countQuery;
-  const { data: produtos, error } = await query.range(offset, offset + limite - 1);
-  const totalPaginas = Math.ceil((totalNoBanco || 0) / limite) || 1;
+  let totalNoBanco = 0;
+  let produtos: any[] = [];
+  let error: any = null;
+
+  const hasMemoryFilter = !!(com_foto || classificacao);
+
+  if (hasMemoryFilter) {
+    // If memory filters are active, fetch all matching products (up to a safe limit like 10000)
+    const res = await query.limit(10000);
+    produtos = res.data || [];
+    error = res.error;
+    // We will calculate totalNoBanco after in-memory filtering
+  } else {
+    // Standard database pagination
+    const resCount = await countQuery;
+    totalNoBanco = resCount.count || 0;
+    
+    const res = await query.range(offset, offset + limite - 1);
+    produtos = res.data || [];
+    error = res.error;
+  }
 
   const catMap = new Map<string, { id: string; nome: string; parent_id: string | null }>();
   (todasCategorias || []).forEach(c => catMap.set(c.id, c));
@@ -168,7 +186,7 @@ export default async function AdminProdutos(props: {
       isSub: false,
       parent_id: null,
     };
-  });
+  }).sort((a, b) => a.nome.localeCompare(b.nome));
 
   let produtosFormatados = (produtos || []).map(p => {
     let catNome = 'Sem Categoria';
@@ -231,6 +249,14 @@ export default async function AdminProdutos(props: {
   } else if (classificacao === 'sem_categoria') {
     produtosFormatados = produtosFormatados.filter(p => p.status_classificacao === 'sem_categoria');
   }
+
+  // If memory filters were applied, we update the totals and apply slice for pagination
+  if (hasMemoryFilter) {
+    totalNoBanco = produtosFormatados.length;
+    produtosFormatados = produtosFormatados.slice(offset, offset + limite);
+  }
+
+  const totalPaginas = Math.ceil((totalNoBanco || 0) / limite) || 1;
 
   const familyConfig = await getFamilyConfig();
   const paiIds = new Set(Object.keys(familyConfig.productToFamilyMap));
