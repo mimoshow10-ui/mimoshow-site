@@ -88,7 +88,7 @@ export default function PopupInstagram() {
             </div>
             {/* Reel 4 */}
             <div className="aspect-[9/16] bg-gray-900 rounded-xl overflow-hidden shadow-inner relative group cursor-pointer">
-               <img src="/logo-luxo.jpg" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition" alt="Reel 4" />
+               <img src="/logo-mimoshow.jpg" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition" alt="Reel 4" />
                <div className="absolute inset-0 flex items-center justify-center">
                  <div className="bg-black/50 rounded-full p-2">
                    <svg fill="white" viewBox="0 0 24 24" className="w-8 h-8"><path d="M8 5v14l11-7z"/></svg>

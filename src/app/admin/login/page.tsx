@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
         <div className="bg-[#0B2545] p-6 text-white text-center relative border-b border-blue-900">
           <div className="w-20 h-20 mx-auto relative mb-2">
             <Image
-              src="/logo-luxo.jpg"
+              src="/logo-mimoshow.png"
               alt="Site Mimoshow"
               fill
               className="object-contain"

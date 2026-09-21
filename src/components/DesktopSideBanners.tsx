@@ -67,7 +67,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
   const defaultPhotos = [
     '/logo-mimoshow.png',
     '/banner-pet.jpg',
-    '/logo-luxo.jpg',
+    '/logo-mimoshow.png',
     '/logo-mimoshow.jpg'
   ];
 
