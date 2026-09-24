@@ -119,6 +119,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   const precoPromoVal = produto.preco_promocional ? Number(produto.preco_promocional) : null;
   const promoValida = precoPromoVal !== null && !isNaN(precoPromoVal) && precoPromoVal < preco && !promoExpirada;
   const precoPromo = promoValida ? precoPromoVal : null;
+  const precoAtual = precoPromo ? precoPromo : preco;
+  const parcelas = 3;
+  const valorParcela = precoAtual / parcelas;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">

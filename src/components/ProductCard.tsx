@@ -45,6 +45,9 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
   const temPromo =
     produto.preco_promocional && Number(produto.preco_promocional) < precoNormal;
   const precoPromo = temPromo ? Number(produto.preco_promocional) : null;
+  const precoAtual = temPromo && precoPromo !== null ? precoPromo : precoNormal;
+  const parcelas = 3;
+  const valorParcela = precoAtual / parcelas;
   const pctDesconto = temPromo && precoNormal > 0
     ? Math.round(((precoNormal - precoPromo!) / precoNormal) * 100)
     : 0;
