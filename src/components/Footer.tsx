@@ -49,7 +49,6 @@ export default function Footer() {
                 <p className="text-[11px] font-black uppercase text-pink-400 tracking-wider mb-1">🎈 Linha Infantil</p>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                   <Link href="/categoria/mascaras" className="hover:text-white transition">Máscaras</Link>
-                  <Link href="/categoria/bolsas" className="hover:text-white transition">Bolsas</Link>
                   <Link href="/categoria/tiaras" className="hover:text-white transition">Tiaras</Link>
                   <Link href="/categoria/jogos" className="hover:text-white transition">Jogos</Link>
                   <Link href="/categoria/quebra-cabeca" className="hover:text-white transition">Quebra-Cabeça</Link>

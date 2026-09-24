@@ -55,7 +55,6 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 // Grupos definidos para o menu Infantil
 const GRUPOS_INFANTIL = [
   { nome: 'Máscaras', slug: 'mascaras', emoji: '🎭' },
-  { nome: 'Bolsas', slug: 'bolsas', emoji: '👜' },
   { nome: 'Tiaras', slug: 'tiaras', emoji: '🎀' },
   { nome: 'Jogos', slug: 'jogos', emoji: '🎲' },
   { nome: 'Quebra-Cabeça', slug: 'quebra-cabeca', emoji: '🧩' },
