@@ -244,7 +244,11 @@ export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: 
     if (resBling.ok && resData?.data?.id) {
       return { sucesso: true, bling_id: String(resData.data.id) };
     } else {
-      const errMsg = resData?.error?.message || resData?.description || JSON.stringify(resData);
+      let errMsg = resData?.error?.message || resData?.description || JSON.stringify(resData);
+      if (resData?.error?.fields) {
+          const fieldErrs = resData.error.fields.map((f) => f.msg).join('; ');
+          errMsg += ` (Detalhes: ${fieldErrs})`;
+      }
       return { sucesso: false, erro: `Bling retornou erro: ${errMsg}` };
     }
   } catch (e: any) {
