@@ -157,9 +157,6 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             ) : (
               <span className="text-4xl font-black text-primary block">R$ {preco.toFixed(2).replace('.', ',')}</span>
             )}
-            <div className="text-sm md:text-base font-semibold text-emerald-500 mt-1">
-              em {parcelas}x R$ {valorParcela.toFixed(2).replace('.', ',')} sem juros
-            </div>
             {promoValida && produto.promocao_expira_em && (
               <div className="ml-2">
                 <SafeComponent>
@@ -167,6 +164,11 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
                 </SafeComponent>
               </div>
             )}
+          </div>
+
+          {/* Parcelamento estilo Mercado Livre */}
+          <div className="text-sm md:text-base font-semibold text-emerald-600">
+            {'💳'} em {parcelas}x de R$ {valorParcela.toFixed(2).replace('.', ',')} sem juros
           </div>
 
           {/* Variações da Família */}
