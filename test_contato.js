@@ -5,17 +5,13 @@ async function run() {
   const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_tokens').single();
   const token = cfg?.valor?.access_token;
   
-  const resBusca = await fetch(`https://api.bling.com.br/Api/v3/contatos?numeroDocumento=29930166874`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  console.log('BUSCA:', await resBusca.json());
-
   const resCria = await fetch('https://api.bling.com.br/Api/v3/contatos', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nome: 'mimo show',
-        tipoPessoa: 'F',
+        tipo: 'F',
+        situacao: 'A',
         numeroDocumento: '29930166874',
         email: 'mimoshow10@gmail.com',
         telefone: '11940260765'

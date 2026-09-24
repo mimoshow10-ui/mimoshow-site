@@ -170,7 +170,8 @@ export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: 
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nome: pedido.cliente?.nome_completo || 'Cliente Site',
-            tipoPessoa: isJ,
+            tipo: isJ,
+            situacao: 'A',
             numeroDocumento: cpfCnpjLimpo,
             email: pedido.cliente?.email || '',
             telefone: (pedido.cliente?.telefone || '').replace(/\D/g, '')
@@ -200,21 +201,47 @@ export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: 
       return { sucesso: false, erro: 'Bling exige ID do contato e falhou ao criar' };
     }
 
+    const { data: prods } = await supabase.from('produtos').select('sku, bling_id');
+    const prodsMap = new Map((prods || []).map(p => [p.sku, p.bling_id]));
+    
     // Payload de Vendas Bling API V3
+    
+    // Procurar IDs de produtos faltantes no Bling pelo SKU
+    for (const item of (pedido.itens || [])) {
+      if (item.sku && !prodsMap.get(item.sku) && !item.bling_id) {
+        try {
+          const resProd = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${item.sku}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const dataProd = await resProd.json();
+          if (dataProd?.data?.length > 0) {
+            prodsMap.set(item.sku, dataProd.data[0].id);
+          }
+        } catch(e) {}
+      }
+    }
+    
+    let descontoCalc = (pedido.subtotal || 0) + (pedido.valor_frete || 0) - (pedido.total || 0);
+    if (descontoCalc < 0) descontoCalc = 0;
+
     const payloadBling = {
       numeroLoja: String(pedido.numero_pedido),
       data: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
+      dataSaida: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
       contato: {
         id: contatoId,
         nome: pedido.cliente?.nome_completo || 'Cliente Site',
         numeroDocumento: cpfCnpjLimpo
       },
       itens: (pedido.itens || []).map((item: any) => ({
+          ...(item.bling_id ? { produto: { id: parseInt(item.bling_id) } } : {}),
         codigo: item.sku || '',
+        ...(prodsMap.get(item.sku) ? { produto: { id: parseInt(prodsMap.get(item.sku)) } } : {}),
         descricao: item.nome || 'Produto',
         quantidade: item.quantidade || 1,
         valor: item.preco_unitario || 0
       })),
+      desconto: { valor: Number(descontoCalc.toFixed(2)) },
       transporte: {
         fretePorConta: 0,
         frete: pedido.valor_frete || 0,
