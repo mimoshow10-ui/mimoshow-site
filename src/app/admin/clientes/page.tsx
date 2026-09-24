@@ -9,10 +9,32 @@ export default async function AdminClientesPage() {
   const { data: config } = await supabase
     .from('configuracoes')
     .select('valor')
-    .eq('chave', 'clientes_db')
-    .single();
+    .eq('chave', 'pedidos_db')
+    .maybeSingle();
 
-  const clientes: Cliente[] = config?.valor || [];
+  const pedidos = config?.valor || [];
+  
+  const clientesMap = new Map<string, any>();
+  
+  pedidos.forEach((p: any) => {
+    if (p.cliente) {
+      const doc = p.cliente.cpf_cnpj?.replace(/\D/g, '') || p.cliente.email;
+      if (doc && !clientesMap.has(doc)) {
+        clientesMap.set(doc, {
+          id: doc,
+          nome_completo: p.cliente.nome_completo,
+          email: p.cliente.email,
+          telefone: p.cliente.telefone,
+          cpf_cnpj: p.cliente.cpf_cnpj,
+          tipo: (p.cliente.cpf_cnpj || '').replace(/\D/g, '').length > 11 ? 'PJ' : 'PF',
+          criado_em: p.criado_em || new Date().toISOString(),
+          enderecos: p.endereco_entrega ? [p.endereco_entrega] : []
+        });
+      }
+    }
+  });
+
+  const clientes = Array.from(clientesMap.values()).sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
 
   const mascararDocumento = (doc: string) => {
     if (!doc) return '---';
