@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { enviarPedidoBlingInterno } from '@/app/admin/pedidos/actions';
 
 export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentData?: any) {
   try {
@@ -33,6 +34,17 @@ export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentD
       pedido.melhor_envio_status = 'CADASTRADO';
     } else {
       pedido.melhor_envio_erro = resultadoMelhorEnvio.erro;
+    }
+
+    // Tentar enviar o pedido para o Bling
+    try {
+      const resBling = await enviarPedidoBlingInterno(pedido);
+      if (resBling.sucesso) {
+        pedido.bling_status = 'OK';
+        pedido.bling_id = resBling.bling_id;
+      }
+    } catch (e: any) {
+      console.error('[BLING AUTOMATICO ERRO]', e);
     }
 
     pedidos[index] = pedido;

@@ -117,7 +117,7 @@ export async function transmitirPedidoBling(formData: FormData) {
 /**
  * Funcao interna de integracao com Bling V3 API
  */
-async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: boolean; bling_id?: string; erro?: string }> {
+export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: boolean; bling_id?: string; erro?: string }> {
   try {
     const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_tokens').single();
     let token = cfg?.valor?.access_token;
