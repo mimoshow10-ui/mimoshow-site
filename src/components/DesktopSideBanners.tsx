@@ -77,7 +77,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
     '/logo-mimoshow.png',
     '/banner-pet.jpg',
     '/logo-mimoshow.png',
-    '/logo-mimoshow.jpg'
+    '/banner-kids.jpg'
   ];
 
   const instaPhotos = Array.from(new Set([...promoImages, ...defaultPhotos]));

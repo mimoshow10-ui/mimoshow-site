@@ -7,6 +7,7 @@ import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
 import BenefitsBar from "@/components/BenefitsBar";
 import DesktopSideBanners from "@/components/DesktopSideBanners";
+import QuemSomosSection from "@/components/QuemSomosSection";
 import OfficialDistributorSection from "@/components/OfficialDistributorSection";
 
 import { hasValidPhoto } from "@/lib/productFilter";
@@ -84,6 +85,7 @@ export default async function Home() {
   // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA E DENTRO DO PERIODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
+      if (!hasValidPhoto(prod)) return false;
     if (ocultosVitrine.has(String(prod.id))) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     
