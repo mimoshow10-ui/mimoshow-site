@@ -150,15 +150,64 @@ export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: 
       return { sucesso: false, erro: 'Token do Bling não configurado nas Configurações.' };
     }
 
+    // 1. Procurar ou criar o contato no Bling
+    let contatoId = null;
+    const cpfCnpjLimpo = (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, '');
+    const isJ = cpfCnpjLimpo.length > 14 ? 'J' : 'F';
+    
+    if (cpfCnpjLimpo) {
+      // Tentar buscar contato por documento
+      const resBusca = await fetch(`https://api.bling.com.br/Api/v3/contatos?numeroDocumento=${cpfCnpjLimpo}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const dataBusca = await resBusca.json();
+      if (dataBusca?.data?.length > 0) {
+        contatoId = dataBusca.data[0].id;
+      } else {
+        // Criar contato
+        const resCria = await fetch('https://api.bling.com.br/Api/v3/contatos', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: pedido.cliente?.nome_completo || 'Cliente Site',
+            tipoPessoa: isJ,
+            numeroDocumento: cpfCnpjLimpo,
+            email: pedido.cliente?.email || '',
+            telefone: (pedido.cliente?.telefone || '').replace(/\D/g, '')
+          })
+        });
+        const dataCria = await resCria.json();
+        if (dataCria?.data?.id) {
+          contatoId = dataCria.data.id;
+        }
+      }
+    }
+
+    if (!contatoId) {
+      // Tentar contato genérico caso n\u00e3o tenha CPF/CNPJ ou tenha falhado
+      const resCriaGen = await fetch('https://api.bling.com.br/Api/v3/contatos', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: pedido.cliente?.nome_completo || 'Cliente Site'
+          })
+      });
+      const dataCriaGen = await resCriaGen.json();
+      contatoId = dataCriaGen?.data?.id;
+    }
+
+    if (!contatoId) {
+      return { sucesso: false, erro: 'Bling exige ID do contato e falhou ao criar' };
+    }
+
     // Payload de Vendas Bling API V3
     const payloadBling = {
-      numero: pedido.numero_pedido,
+      numeroLoja: String(pedido.numero_pedido),
       data: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
       contato: {
+        id: contatoId,
         nome: pedido.cliente?.nome_completo || 'Cliente Site',
-        cpfCnpj: (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, ''),
-        email: pedido.cliente?.email || '',
-        telefone: (pedido.cliente?.telefone || '').replace(/\D/g, '')
+        numeroDocumento: cpfCnpjLimpo
       },
       itens: (pedido.itens || []).map((item: any) => ({
         codigo: item.sku || '',
