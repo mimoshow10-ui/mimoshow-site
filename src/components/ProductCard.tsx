@@ -114,6 +114,10 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
             </span>
           )}
 
+          <div className="text-xs md:text-sm font-semibold text-emerald-500 mt-0.5 tracking-tight">
+            em {parcelas}x R$ {valorParcela.toFixed(2).replace('.', ',')} sem juros
+          </div>
+
           {/* Badge de Validade Promocional Leve */}
           {timerAtivo && (
             <div className="pt-1 border-t border-red-100 flex items-center justify-between text-[10px] text-red-600 font-bold bg-red-50/50 px-2 py-1 rounded-lg">
