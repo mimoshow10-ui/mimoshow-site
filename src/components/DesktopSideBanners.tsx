@@ -51,6 +51,15 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
 
+  // Fecha os banners automaticamente após 5 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLeftOpen(false);
+      setRightOpen(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Rotação de produtos promocionais (a cada 3 segundos)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
