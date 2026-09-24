@@ -109,7 +109,7 @@ export default async function CategoriaPage({
     produtos = unicos.filter(p => !ocultosVitrine.has(String(p.id)));
   }
 
-  const produtosFiltrados = produtos;
+  const produtosFiltrados = produtos.filter(hasValidPhoto);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

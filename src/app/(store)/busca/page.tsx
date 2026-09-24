@@ -48,7 +48,7 @@ export default async function BuscaPage({
       .order('criado_em', { ascending: false });
 
     if (data) {
-      produtos = data.filter(p => !ocultosVitrine.has(String(p.id)));
+      produtos = data.filter(p => !ocultosVitrine.has(String(p.id)) && hasValidPhoto(p));
     }
   }
 

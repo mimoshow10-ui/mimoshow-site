@@ -79,7 +79,7 @@ export default async function Home() {
     .order('criado_em', { ascending: false });
 
   const produtos = (todosProdutos || []).filter(p => !ocultosVitrine.has(String(p.id)));
-  const produtosComFoto = produtos;
+  const produtosComFoto = produtos.filter(hasValidPhoto);
 
   // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA E DENTRO DO PERIODO
   const agora = Date.now();
