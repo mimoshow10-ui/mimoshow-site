@@ -7,7 +7,7 @@ import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, Shie
 interface Props {
   temSenhaConfigurada: boolean;
   resendConfig: { api_key?: string } | null;
-  creds: { client_id?: string; client_secret?: string } | null;
+  creds: { client_id?: string; client_secret?: string; loja_id_banho_tosa?: string; loja_id_mimo_show?: string } | null;
   mpCreds: { access_token?: string; public_key?: string } | null;
   freteConfig: {
     cep_origem?: string;
@@ -293,8 +293,21 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
       {/* AUTENTICAÇÃO DO BLING */}
       <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Autenticação do Bling</h2>
-        <p className="text-sm text-gray-600 mb-6">Coloque suas senhas aqui UMA ÚNICA VEZ para o sistema se conectar automaticamente.</p>
+        <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
+          <span>📦 Integração & Canais de Venda do Bling ERP</span>
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Configure a conexão da API e os <strong>IDs de Loja / Canal de Venda</strong> para que cada pedido seja gravado no Bling com o logotipo e nome exatos de onde veio a venda (Banho & Tosa Pet ou Mimo Show).
+        </p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 mb-6 text-xs text-blue-900 leading-relaxed space-y-1">
+          <p className="font-bold flex items-center gap-1.5 text-blue-950">
+            <KeyRound size={15} /> Como exibir o símbolo da loja no Bling:
+          </p>
+          <p>1. No Bling, acesse <strong>Configurações (ícone de engrenagem) ➔ Integrações ➔ Configurações de integrações / Lojas Virtuais</strong>.</p>
+          <p>2. Crie ou abra a integração para a sua loja (ex: tipo <strong>API / Loja Virtual</strong> chamada <em>"Banho e Tosa"</em> ou <em>"Mimo Show"</em>).</p>
+          <p>3. Copie o <strong>ID numérico</strong> da loja gerado pelo Bling (ex: <code>203551250</code>) e cole no campo correspondente abaixo.</p>
+        </div>
 
         {msgCreds && (
           <div className={`p-3 rounded-xl font-bold text-xs flex items-center gap-2 mb-4 ${
@@ -308,12 +321,47 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
         <form onSubmit={handleSalvarCredenciais} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Client ID</label>
-              <input name="client_id" type="text" required defaultValue={creds?.client_id || ''} className="w-full border border-border rounded-lg p-2 font-mono text-sm" />
+              <label className="block text-xs font-bold text-gray-700 mb-1">Client ID *</label>
+              <input name="client_id" type="text" required defaultValue={creds?.client_id || ''} className="w-full border border-gray-300 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Client Secret</label>
-              <input name="client_secret" type="password" required defaultValue={creds?.client_secret || ''} className="w-full border border-border rounded-lg p-2 font-mono text-sm" />
+              <label className="block text-xs font-bold text-gray-700 mb-1">Client Secret *</label>
+              <input name="client_secret" type="password" required defaultValue={creds?.client_secret || ''} className="w-full border border-gray-300 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="border-t border-blue-100 pt-3 mt-1">
+            <h3 className="text-xs font-bold uppercase text-gray-600 mb-3 tracking-wider">
+              🏷️ Identificadores de Canal / Loja no Bling (Para exibir o ícone da loja no pedido)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-200/80">
+                <label className="block text-xs font-bold text-amber-900 mb-1">
+                  🐕 ID da Loja Bling — Banho & Tosa Pet
+                </label>
+                <input
+                  name="loja_id_banho_tosa"
+                  type="text"
+                  placeholder="Ex: 203551254"
+                  defaultValue={creds?.loja_id_banho_tosa || ''}
+                  className="w-full border border-amber-300 rounded-lg p-2.5 font-mono text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-amber-800 mt-1">ID da integração cadastrada no Bling para o Banho e Tosa Pet.</p>
+              </div>
+
+              <div className="bg-purple-50/50 p-3 rounded-lg border border-purple-200/80">
+                <label className="block text-xs font-bold text-purple-900 mb-1">
+                  🏬 ID da Loja Bling — Mimo Show
+                </label>
+                <input
+                  name="loja_id_mimo_show"
+                  type="text"
+                  placeholder="Ex: 203572665"
+                  defaultValue={creds?.loja_id_mimo_show || ''}
+                  className="w-full border border-purple-300 rounded-lg p-2.5 font-mono text-xs bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-purple-800 mt-1">ID da integração cadastrada no Bling para a Mimo Show.</p>
+              </div>
             </div>
           </div>
           
@@ -321,18 +369,18 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
             <button
               type="submit"
               disabled={loadingCreds}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2 text-xs"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
             >
               {loadingCreds ? <RefreshCw size={14} className="animate-spin" /> : null}
-              <span>{loadingCreds ? 'Salvando...' : '1. Salvar Credenciais'}</span>
+              <span>{loadingCreds ? 'Salvando...' : '💾 Salvar Configurações do Bling'}</span>
             </button>
 
             {creds?.client_id && (
               <a 
                 href={`https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${creds.client_id}&state=state123`}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition inline-block text-xs"
+                className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition inline-block text-xs shadow-sm"
               >
-                2. Autorizar no Bling (Mágico)
+                🔐 Reconectar / Autorizar Bling
               </a>
             )}
           </div>

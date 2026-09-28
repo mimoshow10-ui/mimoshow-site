@@ -188,7 +188,20 @@ export async function enviarParaBling(pedido: any): Promise<{ sucesso: boolean; 
       });
     }
 
-    // 3. Montar payload do pedido de venda
+    // 3. Identificar canal/loja no Bling
+    let idLojaBling = null;
+    const origem = String(pedido.origem_loja || pedido.origem_host || '').toLowerCase();
+    if (origem.includes('banho') && creds?.valor?.loja_id_banho_tosa) {
+      idLojaBling = Number(creds.valor.loja_id_banho_tosa);
+    } else if ((origem.includes('mimo') || origem.includes('show')) && creds?.valor?.loja_id_mimo_show) {
+      idLojaBling = Number(creds.valor.loja_id_mimo_show);
+    } else if (creds?.valor?.loja_id_banho_tosa) {
+      idLojaBling = Number(creds.valor.loja_id_banho_tosa);
+    } else if (creds?.valor?.loja_id_mimo_show) {
+      idLojaBling = Number(creds.valor.loja_id_mimo_show);
+    }
+
+    // 4. Montar payload do pedido de venda
     const payloadVenda: any = {
       numeroLoja: String(pedido.numero_pedido || ''),
       data: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
@@ -210,6 +223,10 @@ export async function enviarParaBling(pedido: any): Promise<{ sucesso: boolean; 
         }
       }
     };
+
+    if (idLojaBling && !isNaN(idLojaBling) && idLojaBling > 0) {
+      payloadVenda.loja = { id: idLojaBling };
+    }
 
     const resBling = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas', {
       method: 'POST',

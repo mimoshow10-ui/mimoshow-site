@@ -74,13 +74,21 @@ export async function salvarCredenciais(formData: FormData) {
   try {
     const clientId = formData.get('client_id') as string;
     const clientSecret = formData.get('client_secret') as string;
+    const lojaIdBanhoTosa = (formData.get('loja_id_banho_tosa') as string || '').trim();
+    const lojaIdMimoShow = (formData.get('loja_id_mimo_show') as string || '').trim();
+
     if (!clientId || !clientSecret) {
       return { sucesso: false, erro: 'Client ID e Client Secret são obrigatórios.' };
     }
 
     const { error } = await supabase.from('configuracoes').upsert({
       chave: 'bling_credentials',
-      valor: { client_id: clientId, client_secret: clientSecret }
+      valor: {
+        client_id: clientId,
+        client_secret: clientSecret,
+        loja_id_banho_tosa: lojaIdBanhoTosa,
+        loja_id_mimo_show: lojaIdMimoShow
+      }
     }, { onConflict: 'chave' });
 
     if (error) {
@@ -88,7 +96,7 @@ export async function salvarCredenciais(formData: FormData) {
     }
 
     revalidatePath('/admin/configuracoes');
-    return { sucesso: true, mensagem: 'Credenciais do Bling salvas com sucesso! Agora basta clicar em Autorizar no Bling.' };
+    return { sucesso: true, mensagem: 'Credenciais e IDs de Loja do Bling salvos com sucesso!' };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar credenciais do Bling.' };
   }
