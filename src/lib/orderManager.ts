@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { enviarPedidoBlingInterno } from '@/app/admin/pedidos/actions';
 
 export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentData?: any) {
   try {
@@ -27,24 +26,36 @@ export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentD
       pedido.dados_pagamento = paymentData;
     }
 
-    // Tentar enviar o pedido para o Melhor Envio
-    const resultadoMelhorEnvio = await enviarParaMelhorEnvio(pedido);
-    if (resultadoMelhorEnvio.sucesso) {
-      pedido.melhor_envio_id = resultadoMelhorEnvio.cartId;
-      pedido.melhor_envio_status = 'CADASTRADO';
-    } else {
-      pedido.melhor_envio_erro = resultadoMelhorEnvio.erro;
-    }
-
-    // Tentar enviar o pedido para o Bling
+    // 1. TRANSMISSÃO 100% AUTOMÁTICA PARA O BLING ERP
     try {
-      const resBling = await enviarPedidoBlingInterno(pedido);
-      if (resBling.sucesso) {
-        pedido.bling_status = 'OK';
-        pedido.bling_id = resBling.bling_id;
+      if (pedido.bling_status !== 'OK') {
+        const resultadoBling = await enviarParaBling(pedido);
+        if (resultadoBling.sucesso && resultadoBling.bling_id) {
+          pedido.bling_status = 'OK';
+          pedido.bling_id = resultadoBling.bling_id;
+          pedido.bling_enviado_em = new Date().toISOString();
+          console.log(`[BLING AUTOMATICO] Pedido #${numeroPedido} integrado com sucesso ao Bling! ID: ${resultadoBling.bling_id}`);
+        } else {
+          pedido.bling_erro = resultadoBling.erro;
+          console.error(`[BLING AUTOMATICO] Falha ao enviar pedido #${numeroPedido} ao Bling:`, resultadoBling.erro);
+        }
       }
     } catch (e: any) {
-      console.error('[BLING AUTOMATICO ERRO]', e);
+      console.error(`[BLING AUTOMATICO] Exceção ao integrar Bling:`, e);
+      pedido.bling_erro = e?.message || 'Erro de conexão';
+    }
+
+    // 2. Tentar enviar o pedido para o Melhor Envio (se configurado)
+    try {
+      const resultadoMelhorEnvio = await enviarParaMelhorEnvio(pedido);
+      if (resultadoMelhorEnvio.sucesso) {
+        pedido.melhor_envio_id = resultadoMelhorEnvio.cartId;
+        pedido.melhor_envio_status = 'CADASTRADO';
+      } else {
+        pedido.melhor_envio_erro = resultadoMelhorEnvio.erro;
+      }
+    } catch (e: any) {
+      console.error(`[MELHOR ENVIO] Erro ao cadastrar etiqueta:`, e);
     }
 
     pedidos[index] = pedido;
@@ -54,13 +65,173 @@ export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentD
       valor: pedidos
     }, { onConflict: 'chave' });
 
-    console.log(`[ORDER MANAGER] Pedido #${numeroPedido} aprovado com sucesso!`);
+    console.log(`[ORDER MANAGER] Pedido #${numeroPedido} aprovado e processado com sucesso!`);
     return { sucesso: true, pedido };
   } catch (err: any) {
     console.error(`[ORDER MANAGER] Erro ao aprovar pedido #${numeroPedido}:`, err);
     return { sucesso: false, erro: err.message };
   }
 }
+
+/**
+ * Envia o pedido 100% automaticamente para o Bling ERP API V3
+ */
+export async function enviarParaBling(pedido: any): Promise<{ sucesso: boolean; bling_id?: string; erro?: string }> {
+  try {
+    const { data: tokens } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_tokens').maybeSingle();
+    let token = tokens?.valor?.access_token;
+    const refreshToken = tokens?.valor?.refresh_token;
+
+    const { data: creds } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_credentials').maybeSingle();
+    const clientId = creds?.valor?.client_id;
+    const clientSecret = creds?.valor?.client_secret;
+
+    // Testar token e renovar automaticamente se necessário
+    let testRes = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas?limite=1', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (testRes.status === 401 && refreshToken && clientId && clientSecret) {
+      console.log('[BLING] Token expirado. Realizando auto-refresh...');
+      const resToken = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+        },
+        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken })
+      });
+      const tokenData = await resToken.json();
+      if (tokenData.access_token) {
+        token = tokenData.access_token;
+        await supabase.from('configuracoes').upsert({
+          chave: 'bling_tokens',
+          valor: { access_token: tokenData.access_token, refresh_token: tokenData.refresh_token || refreshToken }
+        }, { onConflict: 'chave' });
+      }
+    }
+
+    if (!token) {
+      return { sucesso: false, erro: 'Token do Bling não configurado nas Configurações.' };
+    }
+
+    // 1. Buscar ou cadastrar o contato no Bling
+    const docLimpo = (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, '');
+    let contatoId = null;
+
+    if (docLimpo) {
+      try {
+        const searchRes = await fetch(`https://api.bling.com.br/Api/v3/contatos?numeroDocumento=${docLimpo}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const searchData = await searchRes.json();
+        if (searchData?.data && searchData.data.length > 0) {
+          contatoId = searchData.data[0].id;
+        }
+      } catch {}
+    }
+
+    if (!contatoId) {
+      // Criar novo contato no Bling
+      const createRes = await fetch('https://api.bling.com.br/Api/v3/contatos', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nome: pedido.cliente?.nome_completo || 'Cliente Loja Virtual',
+          tipo: pedido.cliente?.tipo_pessoa === 'PJ' ? 'J' : 'F',
+          situacao: 'A',
+          numeroDocumento: docLimpo,
+          email: pedido.cliente?.email || '',
+          telefone: (pedido.cliente?.telefone || '').replace(/\D/g, ''),
+          endereco: {
+            geral: {
+              endereco: pedido.endereco_entrega?.logradouro || '',
+              numero: pedido.endereco_entrega?.numero || 'S/N',
+              complemento: pedido.endereco_entrega?.complemento || '',
+              bairro: pedido.endereco_entrega?.bairro || '',
+              cep: (pedido.endereco_entrega?.cep || '').replace(/\D/g, ''),
+              municipio: pedido.endereco_entrega?.cidade || '',
+              uf: pedido.endereco_entrega?.uf || 'SP'
+            }
+          }
+        })
+      });
+      const createData = await createRes.json();
+      contatoId = createData?.data?.id;
+    }
+
+    // 2. Mapear itens e buscar IDs dos produtos no Bling
+    const itensBling: any[] = [];
+    for (const item of (pedido.itens || [])) {
+      let produtoId = null;
+      if (item.sku) {
+        try {
+          const prodRes = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${encodeURIComponent(item.sku)}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const prodData = await prodRes.json();
+          if (prodData?.data && prodData.data.length > 0) {
+            produtoId = prodData.data[0].id;
+          }
+        } catch {}
+      }
+
+      itensBling.push({
+        codigo: item.sku || '',
+        descricao: item.nome || 'Produto Pet',
+        quantidade: Number(item.quantidade || 1),
+        valor: Number(item.preco_unitario || item.preco || 0),
+        produto: produtoId ? { id: produtoId } : undefined
+      });
+    }
+
+    // 3. Montar payload do pedido de venda
+    const payloadVenda: any = {
+      numeroLoja: String(pedido.numero_pedido || ''),
+      data: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
+      dataSaida: new Date().toISOString().split('T')[0],
+      contato: contatoId ? { id: contatoId } : { nome: pedido.cliente?.nome_completo || 'Cliente' },
+      itens: itensBling,
+      transporte: {
+        fretePorConta: Number(pedido.valor_frete || 0) > 0 ? 0 : 1,
+        frete: Number(pedido.valor_frete || 0),
+        etiqueta: {
+          nome: pedido.cliente?.nome_completo,
+          endereco: pedido.endereco_entrega?.logradouro,
+          numero: pedido.endereco_entrega?.numero,
+          complemento: pedido.endereco_entrega?.complemento,
+          municipio: pedido.endereco_entrega?.cidade,
+          uf: pedido.endereco_entrega?.uf,
+          cep: (pedido.endereco_entrega?.cep || '').replace(/\D/g, ''),
+          bairro: pedido.endereco_entrega?.bairro
+        }
+      }
+    };
+
+    const resBling = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payloadVenda)
+    });
+
+    const resData = await resBling.json();
+    if (resBling.ok && resData?.data?.id) {
+      return { sucesso: true, bling_id: String(resData.data.id) };
+    } else {
+      const errMsg = resData?.error?.message || resData?.description || JSON.stringify(resData);
+      return { sucesso: false, erro: `Bling: ${errMsg}` };
+    }
+  } catch (err: any) {
+    return { sucesso: false, erro: err.message || 'Exceção ao conectar no Bling' };
+  }
+}
+
 
 export async function enviarParaMelhorEnvio(pedido: any): Promise<{ sucesso: boolean; cartId?: string; erro?: string }> {
   try {
@@ -100,19 +271,19 @@ export async function enviarParaMelhorEnvio(pedido: any): Promise<{ sucesso: boo
       service: 1, // PAC Padrão Correios / Melhor Envio
       agency: 1,
       from: {
-        name: 'MIMO Show',
-        phone: '11999999999',
-        email: 'contato@mimoshow.com.br',
+        name: 'Banho & Tosa Pet',
+        phone: '11930813280',
+        email: 'sac@mimoshow.com.br',
+        document: '00000000000000',
         address: 'Rua Principal',
         number: '100',
-        district: 'Centro',
+        postal_code: meTrans?.cep_origem || '01000-000',
         city: 'São Paulo',
         state_abbr: 'SP',
         country_id: 'BR',
-        postal_code: '01001000'
       },
       to: {
-        name: pedido.cliente?.nome_completo || 'Cliente MIMO Show',
+        name: pedido.cliente?.nome_completo || 'Cliente Banho & Tosa',
         phone: pedido.cliente?.telefone || '11999999999',
         email: pedido.cliente?.email || 'cliente@email.com',
         document: (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, ''),

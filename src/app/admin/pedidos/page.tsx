@@ -137,6 +137,7 @@ export default async function AdminPedidosPage() {
             <thead className="bg-gray-50 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-gray-200">
               <tr>
                 <th className="p-4">Nº Pedido</th>
+                <th className="p-4">Loja / Origem</th>
                 <th className="p-4">Cliente</th>
                 <th className="p-4">Data</th>
                 <th className="p-4">Itens / SKUs</th>
@@ -150,11 +151,23 @@ export default async function AdminPedidosPage() {
               {pedidos.map((ped) => {
                 const isPago = ped.status === 'PAGAMENTO_APROVADO' || ped.status === 'ENVIADO' || ped.status === 'ENTREGUE';
                 const isBlingOk = ped.bling_status === 'OK';
+                const isMimo = ped.origem_loja === 'Mimo Show' || (ped.dados_pagamento?.notification_url && ped.dados_pagamento.notification_url.includes('mimo'));
 
                 return (
                   <tr key={ped.id} className="hover:bg-blue-50/40 transition">
                     <td className="p-4 font-black text-secondary">
                       #{ped.numero_pedido}
+                    </td>
+                    <td className="p-4">
+                      {isMimo ? (
+                        <span className="bg-purple-100 text-purple-800 border border-purple-200 font-black px-2.5 py-1 rounded-lg text-xs inline-flex items-center gap-1 shadow-2xs">
+                          🏬 Mimo Show
+                        </span>
+                      ) : (
+                        <span className="bg-amber-100 text-amber-900 border border-amber-200 font-black px-2.5 py-1 rounded-lg text-xs inline-flex items-center gap-1 shadow-2xs">
+                          🐕 Banho & Tosa
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 font-bold text-gray-800">
                       {ped.cliente?.nome_completo || 'Cliente'}

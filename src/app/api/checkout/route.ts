@@ -28,10 +28,21 @@ export async function POST(request: Request) {
     const numeroPedido = String(proximoNumero);
     const idPedido = `ped-${numeroPedido}`;
 
+    // Identificar automaticamente a loja de origem
+    const host = request.headers.get('host') || '';
+    let origemLoja = 'Banho e Tosa Pet';
+    if (host.toLowerCase().includes('mimo')) {
+      origemLoja = 'Mimo Show';
+    } else if (host.toLowerCase().includes('banhoeto') || host.toLowerCase().includes('pet')) {
+      origemLoja = 'Banho e Tosa Pet';
+    }
+
     // Criar o objeto do pedido
     const novoPedido = {
       id: idPedido,
       numero_pedido: numeroPedido,
+      origem_loja: origemLoja,
+      origem_host: host,
       cliente: {
         nome_completo: cliente?.nomeCompleto || '',
         cpf_cnpj: cliente?.cpfCnpj || '',
@@ -112,7 +123,7 @@ export async function POST(request: Request) {
         statement_descriptor: 'MIMOSHOWPET',
         external_reference: numeroPedido,
         payer: {
-          name: cliente?.nomeCompleto || 'Cliente MIMO Show',
+          name: cliente?.nomeCompleto || 'Cliente Banho & Tosa',
           email: cliente?.email || 'cliente@email.com',
           identification: cliente?.cpfCnpj ? {
             type: cliente?.tipoPessoa === 'PJ' ? 'CNPJ' : 'CPF',
