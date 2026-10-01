@@ -132,7 +132,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
   return (
     <nav className="w-full bg-white border-t border-gray-100 shadow-2xs relative z-40" ref={navRef}>
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5">
-        <div className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2">
+        <div className="flex md:flex-wrap items-center gap-1.5 md:gap-2 overflow-x-auto md:overflow-visible no-scrollbar py-0.5 md:justify-center">
           
           {/* Categorias Padrão (Adesivos, Bandanas, Gargantilhas, Gravatinhas, Lacinhos) */}
           {padraoPais.map((cat) => {

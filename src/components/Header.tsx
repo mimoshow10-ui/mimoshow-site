@@ -7,7 +7,6 @@ import SearchBar from './SearchBar';
 import CategoryNav from './CategoryNav';
 import CartCountBadge from './CartCountBadge';
 
-
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || {
@@ -21,45 +20,53 @@ export default async function Header() {
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
       <TopBar topbar={topbar} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-1">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Linha Principal do Cabeçalho */}
+        <div className="flex justify-between items-center py-1 sm:py-2 gap-2 sm:gap-4">
           
-          {/* Logo do Site (Diminuído 20%) */}
-          <div className="flex items-center">
+          {/* Logo do Site (Compacto no mobile, grande no desktop) */}
+          <div className="flex items-center flex-shrink-0">
             <Link href="/">
-              <div className="relative w-56 md:w-[280px] h-14 md:h-16 cursor-pointer overflow-visible flex items-center">
+              <div className="relative w-36 sm:w-48 md:w-[280px] h-11 sm:h-14 md:h-16 cursor-pointer overflow-visible flex items-center">
                 <Image 
                   src="/logo-mimoshow.png" 
                   alt="MimoShow Logo" 
                   fill 
-                  className="object-contain object-left scale-[1.2] origin-left" 
+                  className="object-contain object-left scale-[1.1] md:scale-[1.2] origin-left" 
                   priority 
                 />
               </div>
             </Link>
           </div>
 
-          {/* Barra de Pesquisa */}
-          <SearchBar />
+          {/* Barra de Pesquisa (Desktop) */}
+          <div className="hidden md:flex flex-1 max-w-lg mx-4 lg:mx-6">
+            <SearchBar />
+          </div>
 
-          {/* Ícones de Conta, Favoritos e Carrinho */}
-          <div className="flex items-center gap-6 text-secondary">
-            <Link href="/minhaconta" className="flex flex-col items-center hover:text-primary transition">
-              <User size={24} />
-              <span className="text-xs font-bold mt-1">Conta</span>
+          {/* Ícones de Conta, Favoritos e Carrinho (Sempre visíveis, nunca cortados) */}
+          <div className="flex items-center gap-2.5 sm:gap-4 md:gap-6 text-secondary flex-shrink-0">
+            <Link href="/minhaconta" className="flex flex-col items-center hover:text-primary transition p-1" title="Minha Conta">
+              <User size={22} className="sm:w-6 sm:h-6" />
+              <span className="text-[11px] sm:text-xs font-bold mt-0.5 hidden sm:block">Conta</span>
             </Link>
-            <Link href="/favoritos" className="flex flex-col items-center hover:text-primary transition relative">
-              <Heart size={24} />
-              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
-              <span className="text-xs font-bold mt-1">Favoritos</span>
+            <Link href="/favoritos" className="flex flex-col items-center hover:text-primary transition relative p-1" title="Favoritos">
+              <Heart size={22} className="sm:w-6 sm:h-6" />
+              <span className="absolute -top-0.5 -right-1 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              <span className="text-[11px] sm:text-xs font-bold mt-0.5 hidden sm:block">Favoritos</span>
             </Link>
-            <Link href="/carrinho" className="flex flex-col items-center hover:text-primary transition relative">
-              <ShoppingCart size={24} />
+            <Link href="/carrinho" className="flex flex-col items-center hover:text-primary transition relative p-1" title="Meu Carrinho">
+              <ShoppingCart size={22} className="sm:w-6 sm:h-6" />
               <CartCountBadge />
-              <span className="text-xs font-bold mt-1">Carrinho</span>
+              <span className="text-[11px] sm:text-xs font-bold mt-0.5 hidden sm:block">Carrinho</span>
             </Link>
           </div>
 
+        </div>
+
+        {/* Barra de Pesquisa Mobile (Segunda linha dedicada no celular) */}
+        <div className="block md:hidden pb-2 pt-0.5">
+          <SearchBar />
         </div>
       </div>
 
