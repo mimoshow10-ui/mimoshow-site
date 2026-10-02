@@ -232,7 +232,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           <h2 className="text-2xl font-heading font-bold text-secondary mb-6">Descrição do Produto</h2>
           <div
             className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: String(produto.descricao_curta || produto.descricao || '') }}
+            dangerouslySetInnerHTML={{ __html: String(produto.descricao_curta || produto.descricao || "").replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, "$1<br />$2") }}
           />
         </div>
       )}
@@ -240,3 +240,4 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     </div>
   );
 }
+

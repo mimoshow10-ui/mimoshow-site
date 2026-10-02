@@ -211,7 +211,7 @@ export default async function EditarProduto(props: {
           <label className="block text-sm font-bold text-gray-700 mb-1">Descrição do Produto (Opcional)</label>
           <textarea 
             name="descricao_curta" 
-            defaultValue={produto.descricao_curta || produto.descricao || ''}
+            defaultValue={String(produto.descricao_curta || produto.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<[^>]+>/g, '').replace(/\n\s*\n/g, '\n\n').trim()}
             rows={5}
             placeholder="Digite a descrição detalhada do produto aqui..."
             className="w-full border border-gray-300 rounded-xl p-3 text-sm font-normal text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white"
