@@ -57,7 +57,7 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
   const timerAtivo = temPromo && expiraTime !== null && !isNaN(expiraTime) && expiraTime > agora;
 
   return (
-    <div className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition-all border border-gray-200 overflow-hidden group">
+    <div className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition-all border border-gray-200 overflow-hidden">
       {/* Imagem do Produto com Badge de Desconto e Badge de SKU */}
       <Link href={`/produto/${produto.slug}`}>
         <div className="aspect-square bg-white relative overflow-hidden flex items-center justify-center p-1">
@@ -65,7 +65,7 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
             <img
               src={foto}
               alt={produto.nome || 'Produto'}
-              className="w-full h-full object-contain md:group-hover:scale-105 transition duration-300 bg-white"
+              className="w-full h-full object-contain md:hover:scale-105 transition duration-300 bg-white"
               onError={() => setImageError(true)}
             />
           )}
@@ -138,3 +138,4 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
     </div>
   );
 }
+

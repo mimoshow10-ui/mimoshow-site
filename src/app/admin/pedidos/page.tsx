@@ -197,15 +197,7 @@ export default async function AdminPedidosPage() {
                       )}
                     </td>
                     <td className="p-4">
-                      {isBlingOk ? (
-                        <span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs inline-flex items-center gap-1">
-                          ✔️ OK ({ped.bling_id ? `#${ped.bling_id}` : 'Recebido'})
-                        </span>
-                      ) : (
-                        <span className="bg-gray-100 text-gray-500 font-medium px-3 py-1 rounded-full text-xs inline-flex items-center gap-1">
-                          ⏳ Aguardando Pag.
-                        </span>
-                      )}
+                      {isBlingOk ? (<span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs inline-flex items-center gap-1">? OK ({ped.bling_id ? `#${ped.bling_id}` : 'Recebido'})</span>) : isPago ? (<span className="bg-red-100 text-red-800 font-bold px-3 py-1 rounded-full text-xs inline-flex items-center gap-1" title={ped.bling_erro || 'Erro ao enviar para o Bling'}>?? Erro Bling</span>) : (<span className="bg-gray-100 text-gray-500 font-medium px-3 py-1 rounded-full text-xs inline-flex items-center gap-1">? Aguardando Pag.</span>)}
                     </td>
                     <td className="p-4 text-center">
                       <Link
@@ -226,3 +218,4 @@ export default async function AdminPedidosPage() {
     </div>
   );
 }
+
