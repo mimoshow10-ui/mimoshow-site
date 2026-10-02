@@ -65,7 +65,7 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
             <img
               src={foto}
               alt={produto.nome || 'Produto'}
-              className="w-full h-full object-contain group-hover:scale-105 transition duration-300 bg-white"
+              className="w-full h-full object-contain md:group-hover:scale-105 transition duration-300 bg-white"
               onError={() => setImageError(true)}
             />
           )}
@@ -89,7 +89,7 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
         <div>
           <Link href={`/produto/${produto.slug}`}>
-            <h3 className="font-bold text-xs md:text-sm line-clamp-2 hover:text-primary transition text-secondary leading-snug">
+            <h3 className="font-bold text-xs md:text-sm line-clamp-2 md:hover:text-primary transition text-secondary leading-snug">
               {produto.nome}
             </h3>
           </Link>
@@ -129,7 +129,7 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
           {/* Botão Ver Produto */}
           <Link
             href={`/produto/${produto.slug}`}
-            className="w-full bg-secondary hover:bg-blue-900 text-white py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
+            className="w-full bg-secondary md:hover:bg-blue-900 text-white py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
           >
             Ver Produto
           </Link>
