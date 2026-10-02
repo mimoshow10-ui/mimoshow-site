@@ -113,9 +113,9 @@ export async function POST(request: Request) {
       });
     }
 
-    const host = request.headers.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const baseUrl = `${protocol}://${host}`;
+    const reqHost = request.headers.get('host') || 'localhost:3000';
+    const protocol = reqHost.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${reqHost}`;
 
     const resPref = await preference.create({
       body: {

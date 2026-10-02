@@ -35,7 +35,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/icon.png?v=3" />
         <link rel="apple-touch-icon" href="/apple-icon.png?v=3" />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-background text-text">
+      <body className="min-h-full flex flex-col font-sans bg-background text-text overflow-x-hidden w-full max-w-[100vw]">
         {children}
       </body>
     </html>

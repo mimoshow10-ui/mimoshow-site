@@ -124,10 +124,10 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   const valorParcela = precoAtual / parcelas;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-2 md:py-12">
 
       {/* ── Bloco principal: Foto | Info ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-10 mb-6 md:mb-12">
 
         {/* COLUNA ESQUERDA — Galeria de fotos e vídeo */}
         <SafeComponent>
