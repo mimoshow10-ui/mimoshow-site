@@ -58,6 +58,8 @@ export async function atualizarProduto(formData: FormData) {
     } catch {}
   }
 
+  const descricao_curta = (formData.get('descricao_curta') as string || '').trim();
+
   const destaque_home = formData.get('destaque_home') as string;
   const isSuperPromo = destaque_home === 'super_promocao';
 
@@ -67,6 +69,7 @@ export async function atualizarProduto(formData: FormData) {
     preco, 
     preco_promocional,
     estoque, 
+    descricao_curta: descricao_curta || null,
     video_url: video_url || null,
     categoria_id: categoria_id || null, 
     imagens: imagensArr.length > 0 ? imagensArr : null,

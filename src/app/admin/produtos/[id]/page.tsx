@@ -207,7 +207,19 @@ export default async function EditarProduto(props: {
         </div>
         
         {/* BLOCO DE ESTOQUE E VISIBILIDADE NA TELA DE VENDAS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4">
+          <label className="block text-sm font-bold text-gray-700 mb-1">Descrição do Produto (Opcional)</label>
+          <textarea 
+            name="descricao_curta" 
+            defaultValue={produto.descricao_curta || produto.descricao || ''}
+            rows={5}
+            placeholder="Digite a descrição detalhada do produto aqui..."
+            className="w-full border border-gray-300 rounded-xl p-3 text-sm font-normal text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+          ></textarea>
+          <p className="text-xs text-gray-500 mt-1">Essa descrição aparecerá na página do produto logo abaixo da imagem e variação. Aceita formatação em HTML se necessário.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
             <label className="block text-xs font-bold text-gray-700 mb-1">Estoque Físico</label>
             <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-gray-300 rounded-xl p-2.5 bg-white text-sm font-bold text-gray-800" readOnly />

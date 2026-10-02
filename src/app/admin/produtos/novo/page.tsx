@@ -23,12 +23,15 @@ export default async function NovoProduto() {
     const imagensTxt = formData.get('imagens') as string;
     const imagens = imagensTxt ? imagensTxt.split(/[\r\n,]+/).map(s => s.trim()).filter(s => s) : null;
     
+    const descricao_curta = (formData.get('descricao_curta') as string || '').trim();
+
     const { data: insertedPai } = await supabase.from('produtos').insert([{ 
       nome, 
       codigo_barras: sku,
       preco, 
       estoque, 
       categoria_id, 
+      descricao_curta: descricao_curta || null,
       slug,
       imagens
     }]).select('id').single();
@@ -95,6 +98,16 @@ export default async function NovoProduto() {
             <label className="block text-sm font-medium mb-1">Estoque Inicial</label>
             <input name="estoque" type="number" required defaultValue="0" className="w-full border border-border rounded-lg p-2" />
           </div>
+        </div>
+
+        <div className="mt-2">
+          <label className="block text-sm font-medium mb-1">Descrição do Produto (Opcional)</label>
+          <textarea 
+            name="descricao_curta" 
+            rows={4}
+            placeholder="Digite a descrição detalhada do produto aqui..."
+            className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+          ></textarea>
         </div>
 
         <div className="mt-2">
