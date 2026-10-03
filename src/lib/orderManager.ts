@@ -239,7 +239,7 @@ export async function enviarParaBling(pedido: any): Promise<{ sucesso: boolean; 
 
     const resData = await resBling.json();
     if (resBling.ok && resData?.data?.id) {
-      return { sucesso: true, bling_id: String(resData.data.id) };
+      return { sucesso: true, bling_id: String(resData.data.numero || resData.data.id) };
     } else {
       const errMsg = resData?.error?.message || resData?.description || JSON.stringify(resData);
       return { sucesso: false, erro: `Bling: ${errMsg}` };
@@ -354,3 +354,4 @@ export async function enviarParaMelhorEnvio(pedido: any): Promise<{ sucesso: boo
     return { sucesso: false, erro: err.message };
   }
 }
+
