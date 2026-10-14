@@ -132,11 +132,13 @@ export async function calcularFretesCarrinho(
               }
             }
 
+            const isSP = isCepEstadoSaoPaulo(cepLimpo);
+            const isFreteGratis = isSP && valorTotalProdutos >= 99; // Regra estrita: Frete Grátis exclusivo para o Estado de SP acima de R$ 99
+
             for (const key in agrupados) {
               const opt = agrupados[key];
               const precoBase = Number(opt.custom_price || opt.price || 0);
               const prazo = Number(opt.custom_delivery_time || opt.delivery_time || 1);
-              const isFreteGratis = valorTotalProdutos >= 99; // Regra de Frete Gratis acima de R$ 99
 
               opcoes.push({
                 id: `melhor-${opt.id}`,
@@ -146,7 +148,7 @@ export async function calcularFretesCarrinho(
                 valor: isFreteGratis ? 0 : Math.max(0, precoBase),
                 prazo_dias: prazo,
                 prazo_estimado_texto: `Chegará em ${prazo} a ${prazo + 2} dias úteis`,
-                descricao: isFreteGratis ? 'Promoção de Frete Grátis aplicada!' : `Cotação oficial via ${opt.categoriaCustom}`,
+                descricao: isFreteGratis ? 'Promoção Frete Grátis SP aplicada!' : `Cotação oficial via ${opt.categoriaCustom}`,
                 is_gratis: isFreteGratis,
               });
             }
@@ -162,13 +164,14 @@ export async function calcularFretesCarrinho(
 
   // Fallback inteligente caso o Token nao esteja configurado ou a API fique indisponivel temporariamente
   if (!cotouMelhorEnvioComSucesso) {
+    const isSP = isCepEstadoSaoPaulo(cepLimpo);
     const uf = await buscarUfPorCep(cepLimpo);
     const sudesteSul = ['SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS'];
     const eProximo = sudesteSul.includes(uf);
 
     let valorPac = (eProximo ? 14.90 : 24.90) + (pesoTotal > 1 ? (pesoTotal - 1) * 4 : 0);
     let prazoPac = (eProximo ? 4 : 8);
-    const isFreteGratis = valorTotalProdutos >= 99;
+    const isFreteGratis = isSP && valorTotalProdutos >= 99; // Frete Grátis exclusivo para SP
 
     opcoes.push({
       id: 'correios-pac-fallback',
@@ -178,7 +181,7 @@ export async function calcularFretesCarrinho(
       valor: isFreteGratis ? 0 : Math.max(0, valorPac),
       prazo_dias: prazoPac,
       prazo_estimado_texto: `Chegará entre ${prazoPac} e ${prazoPac + 2} dias úteis`,
-      descricao: isFreteGratis ? 'Promoção de Frete Grátis aplicada!' : 'Entrega garantida pelos Correios',
+      descricao: isFreteGratis ? 'Promoção Frete Grátis SP aplicada!' : 'Entrega garantida pelos Correios',
       is_gratis: isFreteGratis,
     });
 
@@ -208,4 +211,12 @@ async function buscarUfPorCep(cep: string): Promise<string> {
   } catch {
     return 'SP';
   }
+}
+
+export function isCepEstadoSaoPaulo(cep: string): boolean {
+  const c = (cep || '').replace(/\D/g, '');
+  if (c.length !== 8) return false;
+  const prefix = parseInt(c.slice(0, 5), 10);
+  // Faixa oficial de CEP do Estado de São Paulo: 01000-000 a 19999-999
+  return prefix >= 1000 && prefix <= 19999;
 }

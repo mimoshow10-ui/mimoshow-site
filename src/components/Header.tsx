@@ -10,7 +10,7 @@ import CartCountBadge from './CartCountBadge';
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || {
-    texto1: '🚚 Frete grátis acima de R$ 99,00',
+    texto1: '🚚 Frete grátis acima de R$ 99,00 para o Estado de SP',
     texto2: '💳 Parcele em até 6x sem juros no cartão',
     visibilidade: 'todas',
     cor: 'bg-primary'

@@ -240,6 +240,8 @@ export default function CheckoutPage() {
           endereco: { cep, logradouro, numero, complemento, bairro, cidade, uf }
         },
         frete: freteSelecionado,
+        cupom: cupomAplicado,
+        desconto: cupomAplicado ? cupomAplicado.desconto : 0,
         total: Math.max(0, subtotal - (cupomAplicado ? cupomAplicado.desconto : 0) + (freteSelecionado ? freteSelecionado.valor : 0))
       };
 
@@ -254,6 +256,7 @@ export default function CheckoutPage() {
         if (data.numeroPedido) {
           try {
             localStorage.setItem('ultimo_pedido', JSON.stringify({ numero: data.numeroPedido, cpf: cpfCnpj, data: new Date().toISOString() }));
+            localStorage.removeItem('cupom_aplicado');
           } catch {}
         }
         window.location.href = data.checkoutUrl;

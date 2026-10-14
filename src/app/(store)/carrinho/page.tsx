@@ -194,7 +194,7 @@ export default function CarrinhoPage() {
 
   const subtotal = itens.reduce((sum, item) => sum + item.preco_unitario * item.quantidade, 0);
   const descontoCupom = cupomAplicado ? cupomAplicado.desconto : 0;
-  const frete = valorFrete ?? 15.00;
+  const frete = valorFrete ?? 0;
   const total = Math.max(0, subtotal - descontoCupom + frete);
   const totalPix = total * 0.95; // 5% de desconto no PIX
 
@@ -405,6 +405,15 @@ export default function CarrinhoPage() {
                   <div className="flex justify-between text-green-600 font-bold">
                     <span>Desconto Cupom ({cupomAplicado.codigo})</span>
                     <span>- R$ {cupomAplicado.desconto.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
+
+                {valorFrete !== null && (
+                  <div className="flex justify-between text-gray-700">
+                    <span>Frete</span>
+                    <span className="font-semibold text-secondary">
+                      {valorFrete === 0 ? 'GRÁTIS' : `+ R$ ${valorFrete.toFixed(2).replace('.', ',')}`}
+                    </span>
                   </div>
                 )}
               </div>

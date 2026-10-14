@@ -58,6 +58,29 @@ export async function aprovarPedidoEGerarEtiqueta(numeroPedido: string, paymentD
       console.error(`[MELHOR ENVIO] Erro ao cadastrar etiqueta:`, e);
     }
 
+    // 3. Incrementar utilização do cupom se houver
+    if (pedido.cupom?.codigo) {
+      try {
+        const { data: configCupons } = await supabase
+          .from('configuracoes')
+          .select('valor')
+          .eq('chave', 'cupons_db')
+          .maybeSingle();
+
+        let cuponsList: any[] = Array.isArray(configCupons?.valor) ? configCupons.valor : [];
+        const cupomIdx = cuponsList.findIndex((c: any) => c.codigo?.toUpperCase() === pedido.cupom.codigo?.toUpperCase());
+        if (cupomIdx >= 0) {
+          cuponsList[cupomIdx].usos_realizados = (cuponsList[cupomIdx].usos_realizados || 0) + 1;
+          await supabase.from('configuracoes').upsert({
+            chave: 'cupons_db',
+            valor: cuponsList
+          }, { onConflict: 'chave' });
+        }
+      } catch (errCupom) {
+        console.error('[CUPOM] Erro ao registrar uso do cupom:', errCupom);
+      }
+    }
+
     pedidos[index] = pedido;
 
     await supabase.from('configuracoes').upsert({
@@ -226,6 +249,19 @@ export async function enviarParaBling(pedido: any): Promise<{ sucesso: boolean; 
 
     if (idLojaBling && !isNaN(idLojaBling) && idLojaBling > 0) {
       payloadVenda.loja = { id: idLojaBling };
+    }
+
+    let descontoCalc = Number(pedido.valor_desconto || 0);
+    if (!descontoCalc) {
+      descontoCalc = (Number(pedido.subtotal) || 0) + (Number(pedido.valor_frete) || 0) - (Number(pedido.total) || 0);
+      if (descontoCalc < 0) descontoCalc = 0;
+    }
+
+    if (descontoCalc > 0) {
+      payloadVenda.desconto = { valor: Number(descontoCalc.toFixed(2)) };
+      if (pedido.cupom?.codigo) {
+        payloadVenda.observacoes = `Cupom aplicado: ${pedido.cupom.codigo}`;
+      }
     }
 
     const resBling = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas', {

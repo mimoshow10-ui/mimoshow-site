@@ -213,8 +213,13 @@ export default async function DetalhePedidoPage({
             R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
           </span>
         </div>
-        <div className="text-right text-xs text-blue-200">
+        <div className="text-right text-xs text-blue-200 space-y-0.5">
           <p>Subtotal: R$ {Number(pedido.subtotal).toFixed(2).replace('.', ',')}</p>
+          {Number(pedido.valor_desconto || 0) > 0 && (
+            <p className="text-emerald-300 font-bold">
+              Desconto {pedido.cupom?.codigo ? `(${pedido.cupom.codigo})` : ''}: - R$ {Number(pedido.valor_desconto).toFixed(2).replace('.', ',')}
+            </p>
+          )}
           <p>Frete: {Number(pedido.valor_frete) === 0 ? 'GRÁTIS' : `R$ ${Number(pedido.valor_frete).toFixed(2).replace('.', ',')}`}</p>
         </div>
       </div>

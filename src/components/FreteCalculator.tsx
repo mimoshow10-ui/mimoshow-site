@@ -32,12 +32,10 @@ export default function FreteCalculator() {
 
       await new Promise(res => setTimeout(res, 400));
       const uf = dados.uf;
-      const sudesteSul = ['SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS'];
-      
-      if (sudesteSul.includes(uf)) {
-        setResultado({ prazo: '3 a 7 dias úteis', valor: 'Grátis acima de R$ 99 | Ou R$ 15,90' });
+      if (uf === 'SP') {
+        setResultado({ prazo: '2 a 5 dias úteis', valor: 'Frete Grátis para SP acima de R$ 99 | Ou R$ 14,90' });
       } else {
-        setResultado({ prazo: '7 a 15 dias úteis', valor: 'Grátis acima de R$ 149 | Ou R$ 24,90' });
+        setResultado({ prazo: '5 a 12 dias úteis', valor: 'Consulte as opções e prazos no checkout' });
       }
     } catch {
       setErro('Erro ao consultar o CEP. Tente novamente.');

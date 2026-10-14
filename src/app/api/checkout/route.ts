@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { supabase } from '@/lib/supabase';
+import { validarCupomNoServidor } from '@/lib/coupons';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, cliente, frete, total } = body;
+    const { items, cliente, frete, total, cupom, desconto } = body;
 
     // 1. Puxar lista de pedidos existente para gerar o número do pedido incremental
     const { data: configPedidos } = await supabase
@@ -37,6 +38,43 @@ export async function POST(request: Request) {
       origemLoja = 'Banho e Tosa Pet';
     }
 
+    // 2. Calcular subtotal, validar cupom e calcular desconto
+    const subtotalCalculado = (items || []).reduce(
+      (sum: number, item: any) => sum + (Number(item.preco_unitario || item.preco || 0) * Number(item.quantidade || 1)),
+      0
+    );
+    const freteCalculado = Number(frete?.valor || 0);
+
+    let valorDesconto = 0;
+    let cupomInfo: any = null;
+
+    if (cupom?.codigo) {
+      try {
+        const resVal = await validarCupomNoServidor(cupom.codigo, items, freteCalculado);
+        if (resVal.valido) {
+          valorDesconto = resVal.descontoAplicado;
+          cupomInfo = {
+            codigo: resVal.cupom.codigo,
+            desconto: valorDesconto,
+            nome: resVal.cupom.nome_interno,
+            tipo_desconto: resVal.cupom.tipo_desconto
+          };
+        } else if (Number(desconto) > 0) {
+          valorDesconto = Math.min(subtotalCalculado, Number(desconto));
+          cupomInfo = cupom;
+        }
+      } catch {
+        if (Number(desconto) > 0) {
+          valorDesconto = Math.min(subtotalCalculado, Number(desconto));
+          cupomInfo = cupom;
+        }
+      }
+    } else if (Number(desconto) > 0) {
+      valorDesconto = Math.min(subtotalCalculado, Number(desconto));
+    }
+
+    const totalCalculado = Math.max(0, Math.round((subtotalCalculado - valorDesconto + freteCalculado) * 100) / 100);
+
     // Criar o objeto do pedido
     const novoPedido = {
       id: idPedido,
@@ -53,9 +91,11 @@ export async function POST(request: Request) {
       endereco_entrega: cliente?.endereco || {},
       frete_selecionado: frete || {},
       itens: items || [],
-      subtotal: (items || []).reduce((sum: number, item: any) => sum + (Number(item.preco_unitario || item.preco || 0) * Number(item.quantidade || 1)), 0),
-      valor_frete: Number(frete?.valor || 0),
-      total: Number(total || 0),
+      subtotal: subtotalCalculado,
+      valor_frete: freteCalculado,
+      cupom: cupomInfo,
+      valor_desconto: valorDesconto,
+      total: totalCalculado,
       status: 'PENDENTE',
       bling_status: 'PENDENTE',
       criado_em: new Date().toISOString()
@@ -93,24 +133,129 @@ export async function POST(request: Request) {
     const client = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
 
-    // Formatar itens para o Mercado Pago
-    const mpItems = (items || []).map((item: any) => ({
-      id: String(item.id || item.sku || 'item'),
-      title: String(item.nome || 'Produto Pet'),
-      quantity: Number(item.quantidade || 1),
-      unit_price: Number(item.preco_unitario || item.preco || 0),
-      currency_id: 'BRL',
-    }));
+    // 3. Montar os itens para o Mercado Pago com o desconto aplicado exatamente
+    const mpItems: any[] = [];
+    const isFreteGratisCupom = cupomInfo?.tipo_desconto === 'frete_gratis';
 
-    // Adicionar frete se houver valor
-    if (frete && frete.valor > 0) {
-      mpItems.push({
-        id: 'frete',
-        title: `Frete - ${frete.nome || 'Entrega'}`,
-        quantity: 1,
-        unit_price: Number(frete.valor),
-        currency_id: 'BRL',
+    if (isFreteGratisCupom) {
+      // Cupom de frete grátis: desconto no frete
+      (items || []).forEach((item: any) => {
+        mpItems.push({
+          id: String(item.id || item.sku || 'item'),
+          title: String(item.nome || 'Produto Pet'),
+          quantity: Number(item.quantidade || 1),
+          unit_price: Number(item.preco_unitario || item.preco || 0),
+          currency_id: 'BRL',
+        });
       });
+
+      const freteComDesconto = Math.max(0, Math.round((freteCalculado - valorDesconto) * 100) / 100);
+      if (freteComDesconto > 0) {
+        mpItems.push({
+          id: 'frete',
+          title: `Frete - ${frete?.nome || 'Entrega'}`,
+          quantity: 1,
+          unit_price: freteComDesconto,
+          currency_id: 'BRL',
+        });
+      }
+    } else if (valorDesconto > 0 && subtotalCalculado > 0) {
+      // Cupom de desconto em produtos (percentual ou fixo): ratear proporcionalmente
+      const targetProductsSubtotal = Math.max(0.01, Math.round((subtotalCalculado - valorDesconto) * 100) / 100);
+
+      let allocatedTotal = 0;
+      const lineAllocations = (items || []).map((item: any, idx: number) => {
+        const itemSubtotal = Number(item.preco_unitario || item.preco || 0) * Number(item.quantidade || 1);
+        let lineTarget: number;
+        if (idx === (items || []).length - 1) {
+          lineTarget = Math.max(0.01 * Number(item.quantidade || 1), Math.round((targetProductsSubtotal - allocatedTotal) * 100) / 100);
+        } else {
+          lineTarget = Math.max(0.01 * Number(item.quantidade || 1), Math.round(((itemSubtotal / subtotalCalculado) * targetProductsSubtotal) * 100) / 100);
+          allocatedTotal += lineTarget;
+        }
+        return { item, lineTarget };
+      });
+
+      // Ajuste fino de centavos na última linha para garantir igualdade exata
+      const currentSum = lineAllocations.reduce((sum: number, l: any) => sum + l.lineTarget, 0);
+      const diff = Math.round((targetProductsSubtotal - currentSum) * 100) / 100;
+      if (diff !== 0 && lineAllocations.length > 0) {
+        lineAllocations[lineAllocations.length - 1].lineTarget = Math.max(
+          0.01 * Number(lineAllocations[lineAllocations.length - 1].item.quantidade || 1),
+          Math.round((lineAllocations[lineAllocations.length - 1].lineTarget + diff) * 100) / 100
+        );
+      }
+
+      lineAllocations.forEach(({ item, lineTarget }: any) => {
+        const qty = Number(item.quantidade || 1);
+        const title = String(item.nome || 'Produto Pet');
+        const id = String(item.id || item.sku || 'item');
+
+        const cents = Math.round(lineTarget * 100);
+        const baseUnitCents = Math.floor(cents / qty);
+        const remainderCents = cents % qty;
+
+        if (remainderCents === 0) {
+          mpItems.push({
+            id,
+            title,
+            quantity: qty,
+            unit_price: baseUnitCents / 100,
+            currency_id: 'BRL',
+          });
+        } else {
+          if (remainderCents > 0) {
+            mpItems.push({
+              id,
+              title,
+              quantity: remainderCents,
+              unit_price: (baseUnitCents + 1) / 100,
+              currency_id: 'BRL',
+            });
+          }
+          if (qty - remainderCents > 0) {
+            mpItems.push({
+              id,
+              title,
+              quantity: qty - remainderCents,
+              unit_price: baseUnitCents / 100,
+              currency_id: 'BRL',
+            });
+          }
+        }
+      });
+
+      // Adicionar frete
+      if (freteCalculado > 0) {
+        mpItems.push({
+          id: 'frete',
+          title: `Frete - ${frete?.nome || 'Entrega'}`,
+          quantity: 1,
+          unit_price: freteCalculado,
+          currency_id: 'BRL',
+        });
+      }
+    } else {
+      // Sem cupom / sem desconto
+      (items || []).forEach((item: any) => {
+        mpItems.push({
+          id: String(item.id || item.sku || 'item'),
+          title: String(item.nome || 'Produto Pet'),
+          quantity: Number(item.quantidade || 1),
+          unit_price: Number(item.preco_unitario || item.preco || 0),
+          currency_id: 'BRL',
+        });
+      });
+
+      if (freteCalculado > 0) {
+        mpItems.push({
+          id: 'frete',
+          title: `Frete - ${frete?.nome || 'Entrega'}`,
+          quantity: 1,
+          unit_price: freteCalculado,
+          currency_id: 'BRL',
+        });
+      }
     }
 
     const reqHost = request.headers.get('host') || 'localhost:3000';
@@ -122,6 +267,14 @@ export async function POST(request: Request) {
         items: mpItems,
         statement_descriptor: 'MIMOSHOWPET',
         external_reference: numeroPedido,
+        metadata: {
+          numero_pedido: numeroPedido,
+          cupom: cupomInfo?.codigo || null,
+          desconto: valorDesconto,
+          subtotal: subtotalCalculado,
+          frete: freteCalculado,
+          total: totalCalculado
+        },
         payer: {
           name: cliente?.nomeCompleto || 'Cliente Banho & Tosa',
           email: cliente?.email || 'cliente@email.com',
