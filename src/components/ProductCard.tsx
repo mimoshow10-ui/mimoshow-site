@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import CountdownTimer from './CountdownTimer';
-import { extractImageUrls } from '@/lib/imageExtractor';
+import { extractImageUrls, getOptimizedImageUrl } from '@/lib/imageExtractor';
 
 interface ProdutoCardProps {
   produto: {
@@ -30,15 +30,18 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
   }
 
   const fotos = extractImageUrls(produto.imagens);
-  let foto = (imageError || !fotos[0]) ? null : fotos[0];
+  let fotoOriginal = (imageError || !fotos[0]) ? null : fotos[0];
 
-  if (!foto) {
+  if (!fotoOriginal) {
     return null;
   }
     
-  if (foto && foto.startsWith('http://')) {
-    foto = foto.replace(/^http:\/\//i, 'https://');
+  if (fotoOriginal && fotoOriginal.startsWith('http://')) {
+    fotoOriginal = fotoOriginal.replace(/^http:\/\//i, 'https://');
   }
+
+  const fotoOtimizada = getOptimizedImageUrl(fotoOriginal, 350, 75);
+  const [currentSrc, setCurrentSrc] = useState(fotoOtimizada);
   const sku = produto.codigo_barras || produto.sku || null;
 
   const precoNormal = Number(produto.preco || 0);
@@ -61,12 +64,20 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
       {/* Imagem do Produto com Badge de Desconto e Badge de SKU */}
       <Link href={`/produto/${produto.slug}`}>
         <div className="aspect-square bg-white relative overflow-hidden flex items-center justify-center p-1">
-          {foto && (
+          {currentSrc && (
             <img
-              src={foto}
+              src={currentSrc}
               alt={produto.nome || 'Produto'}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain md:hover:scale-105 transition duration-300 bg-white"
-              onError={() => setImageError(true)}
+              onError={() => {
+                if (currentSrc !== fotoOriginal && fotoOriginal) {
+                  setCurrentSrc(fotoOriginal);
+                } else {
+                  setImageError(true);
+                }
+              }}
             />
           )}
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getOptimizedImageUrl } from '@/lib/imageExtractor';
 import { 
   Flame, 
   ChevronRight, 
@@ -160,7 +161,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                 >
                   {currentProduct.imagens && currentProduct.imagens.length > 0 ? (
                     <Image
-                      src={currentProduct.imagens[0]}
+                      src={getOptimizedImageUrl(currentProduct.imagens[0], 250, 75)}
                       alt={currentProduct.nome}
                       fill
                       className="object-contain p-1.5 group-hover/img:scale-105 transition-transform duration-300"
@@ -402,3 +403,4 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
     </>
   );
 }
+

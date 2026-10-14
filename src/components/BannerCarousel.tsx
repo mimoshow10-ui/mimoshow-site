@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getOptimizedImageUrl } from '@/lib/imageExtractor';
 
 interface BannerItem {
   url: string;
@@ -44,11 +45,20 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {activeBanners.map((banner, idx) => {
+          const bannerSrc = getOptimizedImageUrl(banner.url, 1200, 80);
           const content = (
             <img 
-              src={banner.url}
+              src={bannerSrc}
               alt={banner.alt || `Banner ${idx + 1}`}
+              loading={idx === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={idx === 0 ? 'high' : 'auto'}
               className="w-full h-full object-cover select-none"
+              onError={(e) => {
+                if ((e.target as HTMLImageElement).src !== banner.url && banner.url) {
+                  (e.target as HTMLImageElement).src = banner.url;
+                }
+              }}
             />
           );
 

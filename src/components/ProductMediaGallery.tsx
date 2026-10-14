@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Play } from 'lucide-react';
-import { extractImageUrls } from '@/lib/imageExtractor';
+import { extractImageUrls, getOptimizedImageUrl } from '@/lib/imageExtractor';
 
 
 
@@ -55,11 +55,16 @@ export default function ProductMediaGallery({ imagens, videoUrl, nome, sku }: Pr
           )
         ) : (
           <img
-            src={currentImg}
+            src={getOptimizedImageUrl(currentImg, 800, 80)}
             alt={nome || 'Foto do Produto'}
+            decoding="async"
             className="w-full h-full object-contain p-2 bg-white"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
+              if ((e.target as HTMLImageElement).src !== currentImg && currentImg) {
+                (e.target as HTMLImageElement).src = currentImg;
+              } else {
+                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
+              }
             }}
           />
         )}
@@ -83,25 +88,34 @@ export default function ProductMediaGallery({ imagens, videoUrl, nome, sku }: Pr
             </button>
           )}
 
-          {safeImages.map((img, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => setActiveMedia(index)}
-              className={`w-20 h-20 bg-white rounded-xl border-2 flex-shrink-0 relative overflow-hidden transition cursor-pointer ${
-                activeMedia === index ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 hover:border-gray-400'
-              }`}
-            >
-              <img
-                src={img}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
-                }}
-              />
-            </button>
-          ))}
+          {safeImages.map((img, index) => {
+            const thumbUrl = getOptimizedImageUrl(img, 150, 70);
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setActiveMedia(index)}
+                className={`w-20 h-20 bg-white rounded-xl border-2 flex-shrink-0 relative overflow-hidden transition cursor-pointer ${
+                  activeMedia === index ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <img
+                  src={thumbUrl}
+                  alt={`Thumbnail ${index + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    if ((e.target as HTMLImageElement).src !== img && img) {
+                      (e.target as HTMLImageElement).src = img;
+                    } else {
+                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
+                    }
+                  }}
+                />
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
