@@ -12,7 +12,7 @@ export default function TopBar({ topbar }: { topbar: any }) {
     return null;
   }
 
-  const frase1 = topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00';
+  const frase1 = topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00 para SP';
   const frase2 = topbar.texto2 || '';
 
   const defaultBg = 'bg-gradient-to-r from-pink-500 via-orange-500 to-amber-500';
