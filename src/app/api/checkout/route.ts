@@ -6,7 +6,26 @@ import { validarCupomNoServidor } from '@/lib/coupons';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, cliente, frete, total, cupom, desconto } = body;
+    const { items, cliente, frete, total, cupom, desconto, honeypot } = body;
+
+    // ── 0. DEFESA CONTRA BOTS E CARDING (HONEYPOT & VALIDAÇÃO ANTI-FRAUDE) ──
+    if (honeypot || body.empresa_website_confirmacao || body.confirm_field) {
+      console.warn('[SECURITY] Tentativa de criação de pedido bloqueada por honeypot.');
+      return NextResponse.json({ erro: 'Requisição inválida.' }, { status: 400 });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ erro: 'O carrinho está vazio.' }, { status: 400 });
+    }
+
+    if (!cliente || !cliente.nomeCompleto || String(cliente.nomeCompleto).trim().length < 3) {
+      return NextResponse.json({ erro: 'Por favor, informe seu nome completo.' }, { status: 400 });
+    }
+
+    const docLimpo = String(cliente?.cpfCnpj || '').replace(/\D/g, '');
+    if (docLimpo.length !== 11 && docLimpo.length !== 14) {
+      return NextResponse.json({ erro: 'Por favor, informe um CPF ou CNPJ válido.' }, { status: 400 });
+    }
 
     // 1. Puxar lista de pedidos existente para gerar o número do pedido incremental
     const { data: configPedidos } = await supabase

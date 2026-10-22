@@ -40,6 +40,7 @@ export default function CheckoutPage() {
   const [validandoCupom, setValidandoCupom] = useState(false);
   const [cuponsDisponiveis, setCuponsDisponiveis] = useState<any[]>([]);
   const [processandoPagamento, setProcessandoPagamento] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
 
   // Carregar itens do carrinho do localStorage (com fallback)
   useEffect(() => {
@@ -242,6 +243,7 @@ export default function CheckoutPage() {
         frete: freteSelecionado,
         cupom: cupomAplicado,
         desconto: cupomAplicado ? cupomAplicado.desconto : 0,
+        honeypot,
         total: Math.max(0, subtotal - (cupomAplicado ? cupomAplicado.desconto : 0) + (freteSelecionado ? freteSelecionado.valor : 0))
       };
 
@@ -350,6 +352,18 @@ export default function CheckoutPage() {
               <p className="text-xs text-gray-500 mb-6">Preencha seus dados para entrega do pedido.</p>
 
               <form onSubmit={irParaEntrega} className="space-y-4">
+                {/* Honeypot invisível para enganar robôs de carding */}
+                <div style={{ display: 'none', position: 'absolute', left: '-9999px' }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="empresa_website_confirmacao"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
                 {/* Tipo de Pessoa */}
                 <div className="flex gap-4 pb-2 border-b border-gray-100">
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-secondary">
