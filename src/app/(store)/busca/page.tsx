@@ -27,9 +27,12 @@ export default async function BuscaPage({
     
     const filters = [
       `nome.ilike.%${q}%`,
-      `codigo_barras.ilike.%${q}%`,
-      `descricao.ilike.%${q}%`
+      `codigo_barras.ilike.%${q}%`
     ];
+
+    if (q.length > 3 && q.endsWith('s')) {
+      filters.push(`nome.ilike.%${q.slice(0, -1)}%`);
+    }
 
     if (qClean && qClean !== q) {
       filters.push(`codigo_barras.ilike.%${qClean}%`);

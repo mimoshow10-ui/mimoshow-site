@@ -47,11 +47,17 @@ export default function SearchBar() {
 
     const timer = setTimeout(async () => {
       setLoading(true);
+      const qTrim = query.trim();
+      const searchTerms = [`nome.ilike.%${qTrim}%`, `codigo_barras.ilike.%${qTrim}%`];
+      if (qTrim.length > 3 && qTrim.endsWith('s')) {
+        searchTerms.push(`nome.ilike.%${qTrim.slice(0, -1)}%`);
+      }
+
       const { data } = await supabase
         .from('produtos')
         .select('id, nome, slug, preco, preco_promocional, imagens')
         .eq('ativo', true)
-        .or(`nome.ilike.%${query}%,codigo_barras.ilike.%${query}%`)
+        .or(searchTerms.join(','))
         .limit(12);
 
       const validos = (data || []).filter(hasValidPhoto).slice(0, 6);
