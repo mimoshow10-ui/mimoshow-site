@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
+import SafeComponent from '@/components/SafeComponent';
 import { notFound } from 'next/navigation';
 import { hasValidPhoto } from '@/lib/productFilter';
 import { getOcultosVitrine } from '@/lib/vitrineManager';
@@ -168,7 +169,9 @@ export default async function CategoriaPage({
       {produtosFiltrados.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
           {produtosFiltrados.map((prod) => (
-            <ProductCard key={prod.id} produto={prod} />
+            <SafeComponent key={prod.id}>
+              <ProductCard produto={prod} />
+            </SafeComponent>
           ))}
         </div>
       ) : (

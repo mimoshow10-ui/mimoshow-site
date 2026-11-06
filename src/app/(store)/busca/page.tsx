@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
+import SafeComponent from '@/components/SafeComponent';
 
 import { hasValidPhoto } from '@/lib/productFilter';
 import { getOcultosVitrine } from '@/lib/vitrineManager';
@@ -40,9 +41,11 @@ export default async function BuscaPage({
 
     const orQuery = filters.join(',');
 
+    const PROD_FIELDS = 'id, nome, slug, preco, preco_promocional, promocao_expira_em, imagens, codigo_barras, ativo';
+
     const { data } = await supabase
       .from('produtos')
-      .select('*')
+      .select(PROD_FIELDS)
       .eq('ativo', true)
       .or(orQuery)
       .order('criado_em', { ascending: false });
@@ -70,7 +73,9 @@ export default async function BuscaPage({
       {produtos.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
           {produtos.map((prod) => (
-            <ProductCard key={prod.id} produto={prod} />
+            <SafeComponent key={prod.id}>
+              <ProductCard produto={prod} />
+            </SafeComponent>
           ))}
         </div>
       ) : (

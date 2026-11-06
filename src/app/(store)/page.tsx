@@ -5,6 +5,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import BannerCarousel from "@/components/BannerCarousel";
 import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
+import SafeComponent from "@/components/SafeComponent";
 import BenefitsBar from "@/components/BenefitsBar";
 import DesktopSideBanners from "@/components/DesktopSideBanners";
 import QuemSomosSection from "@/components/QuemSomosSection";
@@ -180,7 +181,9 @@ export default async function Home() {
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
               {produtosPromocao.map((prod) => (
-                <ProductCard key={`promo-${prod.id}`} produto={prod} />
+                <SafeComponent key={`promo-${prod.id}`}>
+                  <ProductCard produto={prod} />
+                </SafeComponent>
               ))}
             </div>
           </section>
@@ -203,7 +206,9 @@ export default async function Home() {
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
               {produtosMaisVendidos.map((prod) => (
-                <ProductCard key={`best-${prod.id}`} produto={prod} />
+                <SafeComponent key={`best-${prod.id}`}>
+                  <ProductCard produto={prod} />
+                </SafeComponent>
               ))}
             </div>
           </section>
@@ -226,7 +231,9 @@ export default async function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
             {produtosNovidades && produtosNovidades.length > 0 ? (
               produtosNovidades.map((prod) => (
-                <ProductCard key={prod.id} produto={prod} />
+                <SafeComponent key={prod.id}>
+                  <ProductCard produto={prod} />
+                </SafeComponent>
               ))
             ) : (
               <div className="col-span-full text-center text-gray-500 py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-300">

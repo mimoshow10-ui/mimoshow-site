@@ -18,30 +18,32 @@ interface ProdutoCardProps {
   };
 }
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { hasValidPhoto } from '@/lib/productFilter';
 
 export default function ProductCard({ produto }: ProdutoCardProps) {
-  const [imageError, setImageError] = useState(false);
-
-  // Regra Estrita: produto SÓ aparece na tela de vendas se tiver foto válida e funcional
-  if (!hasValidPhoto(produto) || imageError) {
-    return null;
-  }
-
-  const fotos = extractImageUrls(produto.imagens);
-  let fotoOriginal = (imageError || !fotos[0]) ? null : fotos[0];
-
-  if (!fotoOriginal) {
-    return null;
-  }
-    
+  const fotos = extractImageUrls(produto?.imagens);
+  let fotoOriginal = fotos[0] || null;
   if (fotoOriginal && fotoOriginal.startsWith('http://')) {
     fotoOriginal = fotoOriginal.replace(/^http:\/\//i, 'https://');
   }
 
-  const fotoOtimizada = getOptimizedImageUrl(fotoOriginal, 350, 75);
+  const fotoOtimizada = fotoOriginal ? getOptimizedImageUrl(fotoOriginal, 350, 75) : '';
+
+  // Regra dos Hooks do React: TODOS os hooks devem ser chamados incondicionalmente no topo do componente
+  const [imageError, setImageError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(fotoOtimizada);
+
+  useEffect(() => {
+    setImageError(false);
+    setCurrentSrc(fotoOtimizada);
+  }, [fotoOtimizada]);
+
+  // Regra Estrita: produto SÓ aparece na tela de vendas se tiver foto válida e funcional
+  if (!hasValidPhoto(produto) || imageError || !fotoOriginal) {
+    return null;
+  }
+
   const sku = produto.codigo_barras || produto.sku || null;
 
   const precoNormal = Number(produto.preco || 0);

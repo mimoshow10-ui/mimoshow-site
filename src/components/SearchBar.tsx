@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { hasValidPhoto } from '@/lib/productFilter';
+import { extractImageUrls, getOptimizedImageUrl } from '@/lib/imageExtractor';
 
 interface ProdutoBusca {
   id: string;
@@ -109,7 +110,11 @@ export default function SearchBar() {
                 const precoExibido = p.preco_promocional && p.preco_promocional < p.preco
                   ? p.preco_promocional
                   : p.preco;
-                const foto = p.imagens?.[0];
+                const fotos = extractImageUrls(p.imagens);
+                let foto = fotos[0] || null;
+                if (foto && foto.startsWith('http://')) {
+                  foto = foto.replace(/^http:\/\//i, 'https://');
+                }
 
                 return (
                   <Link
@@ -120,7 +125,14 @@ export default function SearchBar() {
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-lg relative overflow-hidden flex-shrink-0 border border-gray-200">
                       {foto ? (
-                        <Image src={foto} alt={p.nome} fill className="object-cover" />
+                        <img
+                          src={getOptimizedImageUrl(foto, 100, 75)}
+                          alt={p.nome}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">Sem Foto</div>
                       )}

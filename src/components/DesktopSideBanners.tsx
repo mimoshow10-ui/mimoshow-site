@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getOptimizedImageUrl } from '@/lib/imageExtractor';
+import { extractImageUrls, getOptimizedImageUrl } from '@/lib/imageExtractor';
 import { 
   Flame, 
   ChevronRight, 
@@ -71,7 +71,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
 
   // Coleção de fotos para o grid do celular (Instagram)
   const promoImages = (produtosPromocao || [])
-    .flatMap(p => p.imagens || [])
+    .flatMap(p => extractImageUrls(p.imagens))
     .filter(img => img && typeof img === 'string' && img.length > 5);
 
   const defaultPhotos = [
@@ -159,18 +159,24 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                   href={`/produto/${currentProduct.slug}`}
                   className="relative block w-full h-28 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 group/img"
                 >
-                  {currentProduct.imagens && currentProduct.imagens.length > 0 ? (
-                    <Image
-                      src={getOptimizedImageUrl(currentProduct.imagens[0], 250, 75)}
-                      alt={currentProduct.nome}
-                      fill
-                      className="object-contain p-1.5 group-hover/img:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px] font-bold">
-                      Sem foto
-                    </div>
-                  )}
+                  {(() => {
+                    const prodFotos = extractImageUrls(currentProduct.imagens);
+                    const fotoP = prodFotos[0];
+                    return fotoP ? (
+                      <img
+                        src={getOptimizedImageUrl(fotoP, 250, 75)}
+                        alt={currentProduct.nome}
+                        className="w-full h-full object-contain p-1.5 group-hover/img:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px] font-bold">
+                        Sem foto
+                      </div>
+                    );
+                  })()}
 
                   {/* Badge de Desconto */}
                   {calculateDiscount(currentProduct.preco, currentProduct.preco_promocional) ? (

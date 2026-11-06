@@ -25,10 +25,10 @@ export default function GlobalStoreError({
 
         <div className="space-y-2">
           <h1 className="text-xl md:text-2xl font-bold text-secondary">
-            Carregando o produto...
+            Ops! Algo deu errado
           </h1>
           <p className="text-sm text-gray-500 leading-relaxed">
-            Houve uma oscilação temporária de conexão. Clique no botão abaixo para tentar abrir novamente.
+            Houve uma oscilação temporária de conexão. Clique no botão abaixo para tentar novamente.
           </p>
         </div>
 
@@ -39,7 +39,7 @@ export default function GlobalStoreError({
             className="flex-1 bg-primary hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             <RefreshCw size={16} />
-            <span>Recarregar Página</span>
+            <span>Tentar Novamente</span>
           </button>
           
           <Link
