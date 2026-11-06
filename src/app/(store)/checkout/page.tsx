@@ -694,29 +694,17 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Aviso e Botão de Redirecionamento Mercado Pago */}
-              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs md:text-sm text-emerald-900 font-medium flex items-center gap-3">
-                <Store size={24} className="text-emerald-600 flex-shrink-0" />
-                <div>
-                  <strong>Pagamento Seguro Mercado Pago:</strong> Você será redirecionado para o ambiente seguro do Mercado Pago para escolher PIX, Cartão de Crédito ou Boleto.
-                </div>
+              {/* Navegação de retorno */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEtapa('entrega')}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-5 rounded-xl text-sm transition inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <ArrowLeft size={16} />
+                  <span>Voltar para Opção de Envio</span>
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleFinalizarEPagar}
-                disabled={processandoPagamento}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl text-lg transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {processandoPagamento ? (
-                  <span>Conectando ao Mercado Pago...</span>
-                ) : (
-                  <>
-                    <span>Pagar Agora no Mercado Pago (PIX / Cartão / Boleto)</span>
-                    <ChevronRight size={22} />
-                  </>
-                )}
-              </button>
             </div>
           )}
 
@@ -840,6 +828,34 @@ export default function CheckoutPage() {
                 </span>
               </div>
             </div>
+
+            {/* Tarja / Botão de Pagamento Mercado Pago logo abaixo do Valor Final */}
+            {etapa === 'resumo' && (
+              <div className="pt-2 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleFinalizarEPagar}
+                  disabled={processandoPagamento}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 px-3 rounded-xl text-sm md:text-base transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-center leading-tight"
+                >
+                  {processandoPagamento ? (
+                    <span>Conectando ao Mercado Pago...</span>
+                  ) : (
+                    <>
+                      <span>Pagar Agora no Mercado Pago (PIX / Cartão / Boleto)</span>
+                      <ChevronRight size={20} className="flex-shrink-0" />
+                    </>
+                  )}
+                </button>
+
+                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-900 font-medium flex items-center gap-2.5">
+                  <Store size={20} className="text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <strong>Pagamento Seguro Mercado Pago:</strong> Você será redirecionado para o ambiente seguro do Mercado Pago.
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-gray-50 p-3 rounded-xl text-[11px] text-gray-500 space-y-1">
               <p>✓ Garantia de devolução grátis em até 7 dias</p>
