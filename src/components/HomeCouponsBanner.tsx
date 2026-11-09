@@ -6,6 +6,7 @@ import { CupomDesconto } from '@/lib/types/coupon';
 
 export default function HomeCouponsBanner() {
   const [cupons, setCupons] = useState<CupomDesconto[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [coletados, setColetados] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function HomeCouponsBanner() {
           setCupons(data.cupons || []);
         }
       } catch {}
+      setCarregando(false);
     }
 
     try {
@@ -38,26 +40,24 @@ export default function HomeCouponsBanner() {
     } catch {}
   }
 
-  const listaExibida: Partial<CupomDesconto>[] = cupons.length > 0 ? cupons : [
-    { id: '1', codigo: 'BEMVINDO10', tipo: 'percentual', valor: 10, compra_minima: 50, nome_interno: 'Cupom de Boas-Vindas 10% OFF' },
-    { id: '2', codigo: 'FRETEGRATIS', tipo: 'frete_gratis', valor: 0, compra_minima: 99, nome_interno: 'Cupom Frete Grátis acima R$ 99' },
-    { id: '3', codigo: 'MIMO15', tipo: 'fixo', valor: 15, compra_minima: 120, nome_interno: 'Super Desconto R$ 15 OFF' },
-  ];
+  if (carregando || cupons.length === 0) {
+    return null;
+  }
 
   return (
     <div className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-500 py-3.5 px-4 text-white shadow-sm border-b border-indigo-700/40">
       <div className="max-w-7xl xl:max-w-[980px] 2xl:max-w-6xl min-[1800px]:max-w-7xl mx-auto">
         {/* Grid de Cupons no estilo Azul com Rosa adaptativo */}
         <div className={`grid gap-3 ${
-          listaExibida.length === 1
+          cupons.length === 1
             ? 'grid-cols-1 max-w-md mx-auto'
-            : listaExibida.length === 2
+            : cupons.length === 2
             ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto'
-            : listaExibida.length === 4
+            : cupons.length === 4
             ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
             : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
         }`}>
-          {listaExibida.map((c) => {
+          {cupons.map((c) => {
             const isColetado = !!coletados[c.codigo!];
             const tipo = (c as any).tipo_desconto || c.tipo;
             const valor = (c as any).valor_desconto !== undefined ? (c as any).valor_desconto : c.valor;
