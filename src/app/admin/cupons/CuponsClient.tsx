@@ -30,6 +30,7 @@ interface Props {
   excluirCupomAction: (formData: FormData) => Promise<void>;
   salvarConfigHomeAction: (payload: { posicao_home: string; cupons_home_ids: string[] }) => Promise<void>;
   salvarListaAction: (cuponsNovos: Cupom[]) => Promise<void>;
+  toggleCupomHomeAction?: (id: string) => Promise<void>;
 }
 
 export default function CuponsClient({
@@ -40,6 +41,7 @@ export default function CuponsClient({
   excluirCupomAction,
   salvarConfigHomeAction,
   salvarListaAction,
+  toggleCupomHomeAction,
 }: Props) {
   const [cupons, setCupons] = useState<Cupom[]>(initialCupons);
   const [posicaoHome, setPosicaoHome] = useState<string>(initialPosicaoHome || 'topo');
@@ -80,6 +82,7 @@ export default function CuponsClient({
   const [permitirAcumulo, setPermitirAcumulo] = useState(false);
   const [exclusivoEmail, setExclusivoEmail] = useState(false);
   const [ativo, setAtivo] = useState(true);
+  const [exibirNaHome, setExibirNaHome] = useState(true);
 
   function iniciarEdicao(c: Cupom) {
     setCupomEditando(c);
@@ -97,6 +100,7 @@ export default function CuponsClient({
     setPermitirAcumulo(c.permitir_acumulo ?? false);
     setExclusivoEmail(c.exclusivo_email ?? false);
     setAtivo(c.ativo ?? true);
+    setExibirNaHome(cuponsHomeIds.includes(c.id));
 
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
@@ -117,6 +121,7 @@ export default function CuponsClient({
     setPermitirAcumulo(false);
     setExclusivoEmail(false);
     setAtivo(true);
+    setExibirNaHome(true);
   }
 
   function notify(msg: string) {
@@ -387,13 +392,37 @@ export default function CuponsClient({
                       {c.desconto_maximo_reais && <div>Teto: R$ {c.desconto_maximo_reais.toFixed(2)}</div>}
                     </td>
                     <td className="p-3.5">
-                      {isNaHome ? (
-                        <span className="bg-amber-100 text-amber-900 font-bold text-[10px] px-2.5 py-1 rounded-full border border-amber-200">
-                          ⭐ Na Home (#{cuponsHomeIds.indexOf(c.id) + 1})
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-[11px]">Não exibido</span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          toggleSelecaoHome(c.id);
+                          if (toggleCupomHomeAction) {
+                            try {
+                              await toggleCupomHomeAction(c.id);
+                              notify(isNaHome ? `Cupom ${c.codigo} removido da Home!` : `Cupom ${c.codigo} colocado na Home!`);
+                            } catch {
+                              notify('Erro ao atualizar exibição na home.');
+                            }
+                          }
+                        }}
+                        className={`text-xs font-black px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                          isNaHome
+                            ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200'
+                            : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-orange-50 hover:text-orange-800 hover:border-orange-300'
+                        }`}
+                        title={isNaHome ? 'Clique para remover da Home' : 'Clique para exibir na Home'}
+                      >
+                        {isNaHome ? (
+                          <>
+                            <span className="text-amber-600">⭐</span>
+                            <span>Na Home (#{cuponsHomeIds.indexOf(c.id) + 1})</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>➕ Colocar na Home</span>
+                          </>
+                        )}
+                      </button>
                     </td>
                     <td className="p-3.5">
                       {c.ativo ? (
@@ -512,17 +541,25 @@ export default function CuponsClient({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Valor do Desconto (% ou R$) *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Valor do Desconto {tipoDesconto === 'percentual' ? '(%)' : tipoDesconto === 'fixo' ? '(R$)' : '(Frete Grátis = R$ 0)'} *
+            </label>
             <input
               name="valor_desconto"
               type="number"
               step="0.01"
               required
-              value={valorDesconto}
+              value={tipoDesconto === 'frete_gratis' ? '0' : valorDesconto}
               onChange={(e) => setValorDesconto(e.target.value)}
-              placeholder="Ex: 10 ou 20.00"
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-primary focus:outline-none"
+              disabled={tipoDesconto === 'frete_gratis'}
+              placeholder={tipoDesconto === 'frete_gratis' ? '0.00 (Frete Grátis)' : 'Ex: 10 ou 20.00'}
+              className="w-full border border-gray-300 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-primary focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
             />
+            {tipoDesconto === 'frete_gratis' && (
+              <p className="text-[11px] text-emerald-700 font-bold mt-1">
+                ✓ Frete Grátis concede 100% de desconto no frete. Defina abaixo o "Valor Mínimo da Compra" (ex: 99.00).
+              </p>
+            )}
           </div>
 
           <div>
@@ -546,9 +583,29 @@ export default function CuponsClient({
               step="0.01"
               value={compraMinima}
               onChange={(e) => setCompraMinima(e.target.value)}
-              placeholder="Ex: 100.00"
+              placeholder="Ex: 100.00 (ou 99.00 para frete grátis)"
               className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             />
+          </div>
+
+          {/* 🌟 CHECKBOX DESTAQUE: EXIBIR NA PÁGINA INICIAL */}
+          <div className="flex items-start gap-3 md:col-span-2 bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-2xl border-2 border-orange-300 shadow-2xs">
+            <input
+              id="exibir_na_home"
+              name="exibir_na_home"
+              type="checkbox"
+              checked={exibirNaHome}
+              onChange={(e) => setExibirNaHome(e.target.checked)}
+              className="w-5 h-5 accent-primary cursor-pointer mt-0.5 rounded"
+            />
+            <div className="flex flex-col">
+              <label htmlFor="exibir_na_home" className="text-sm font-black text-orange-950 cursor-pointer flex items-center gap-1.5">
+                ⭐ Exibir este cupom na Página Inicial (Faixa de Cupons da Home)
+              </label>
+              <span className="text-xs text-orange-800 mt-0.5">
+                Marque para que o cupom apareça automaticamente na faixa do topo da loja para os clientes coletarem.
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 md:col-span-2 bg-gray-50 p-3.5 rounded-xl border border-gray-200">

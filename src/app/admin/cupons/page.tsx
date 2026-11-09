@@ -73,6 +73,33 @@ async function salvarCupom(formData: FormData) {
     redirect(`/admin/cupons?erro=Erro ao salvar cupom: ${encodeURIComponent(upsertError.message)}`);
   }
 
+  // 🎯 Sincronização automática com a Tela de Vendas (Home)
+  const exibir_na_home = formData.get('exibir_na_home') === 'on';
+  const { data: configPos } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', 'cupons_config')
+    .maybeSingle();
+
+  let cupons_home_ids: string[] = configPos?.valor?.cupons_home_ids || [];
+  const posicao_home = configPos?.valor?.posicao_home || 'topo';
+
+  if (exibir_na_home && ativo) {
+    if (!cupons_home_ids.includes(id)) {
+      cupons_home_ids.push(id);
+    }
+  } else {
+    cupons_home_ids = cupons_home_ids.filter(item => item !== id);
+  }
+
+  await supabase.from('configuracoes').upsert({
+    chave: 'cupons_config',
+    valor: {
+      posicao_home,
+      cupons_home_ids
+    }
+  }, { onConflict: 'chave' });
+
   revalidatePath('/admin/cupons');
   revalidatePath('/');
   redirect('/admin/cupons?msg=Cupom salvo com sucesso!');
@@ -93,9 +120,56 @@ async function excluirCupom(formData: FormData) {
 
   await supabase.from('configuracoes').update({ valor: lista }).eq('chave', 'cupons_db');
 
+  // Limpa também da lista de cupons exibidos na home
+  const { data: configPos } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', 'cupons_config')
+    .maybeSingle();
+
+  if (configPos?.valor?.cupons_home_ids) {
+    const novosHomeIds = (configPos.valor.cupons_home_ids as string[]).filter(item => item !== id);
+    await supabase.from('configuracoes').upsert({
+      chave: 'cupons_config',
+      valor: {
+        posicao_home: configPos.valor.posicao_home || 'topo',
+        cupons_home_ids: novosHomeIds
+      }
+    }, { onConflict: 'chave' });
+  }
+
   revalidatePath('/admin/cupons');
   revalidatePath('/');
   redirect('/admin/cupons?msg=Cupom removido!');
+}
+
+async function toggleCupomHome(id: string) {
+  'use server';
+  const { data: configPos } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', 'cupons_config')
+    .maybeSingle();
+
+  let cupons_home_ids: string[] = configPos?.valor?.cupons_home_ids || [];
+  const posicao_home = configPos?.valor?.posicao_home || 'topo';
+
+  if (cupons_home_ids.includes(id)) {
+    cupons_home_ids = cupons_home_ids.filter(item => item !== id);
+  } else {
+    cupons_home_ids.push(id);
+  }
+
+  await supabase.from('configuracoes').upsert({
+    chave: 'cupons_config',
+    valor: {
+      posicao_home,
+      cupons_home_ids
+    }
+  }, { onConflict: 'chave' });
+
+  revalidatePath('/admin/cupons');
+  revalidatePath('/');
 }
 
 async function salvarListaCupons(cuponsNovos: Cupom[]) {
@@ -206,6 +280,7 @@ export default async function AdminCuponsPage({
         excluirCupomAction={excluirCupom}
         salvarConfigHomeAction={salvarConfigCuponsHome}
         salvarListaAction={salvarListaCupons}
+        toggleCupomHomeAction={toggleCupomHome}
       />
     </div>
   );

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getCupons } from '@/lib/coupons';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const todos = await getCupons();
