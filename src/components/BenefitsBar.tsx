@@ -1,40 +1,40 @@
 'use client';
 
-import { CreditCard, Percent, Truck, ShieldCheck, Sparkles } from 'lucide-react';
+import { CreditCard, Percent, Factory, ShieldCheck, Sparkles, Store } from 'lucide-react';
 
 export default function BenefitsBar() {
   const diferenciais = [
     {
-      icon: CreditCard,
-      titulo: 'ATÉ 4X SEM JUROS',
-      subtitulo: 'Todos os cartões de crédito',
-      bgColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-      boxBg: 'hover:bg-purple-50/50',
-      borderColor: 'border-purple-200',
-      tagColor: 'text-purple-700',
-    },
-    {
-      icon: Percent,
-      titulo: '5% DE DESCONTO',
-      subtitulo: 'No PIX à vista imediato',
-      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-      boxBg: 'hover:bg-emerald-50/50',
-      borderColor: 'border-emerald-200',
-      tagColor: 'text-emerald-700',
-    },
-    {
-      icon: Truck,
-      titulo: 'FRETE GRÁTIS',
-      subtitulo: 'Confira as regras e regiões*',
+      icon: Factory,
+      titulo: 'DIRETO DA FÁBRICA',
+      subtitulo: 'Produção própria sem intermediários',
       bgColor: 'bg-gradient-to-br from-orange-500 to-amber-600',
       boxBg: 'hover:bg-orange-50/50',
       borderColor: 'border-orange-200',
       tagColor: 'text-orange-700',
     },
     {
-      icon: ShieldCheck,
-      titulo: 'SITE 100% SEGURO',
-      subtitulo: 'Ambiente blindado e protegido',
+      icon: Percent,
+      titulo: '5% OFF NO PIX',
+      subtitulo: 'Desconto automático imediato',
+      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+      boxBg: 'hover:bg-emerald-50/50',
+      borderColor: 'border-emerald-200',
+      tagColor: 'text-emerald-700',
+    },
+    {
+      icon: CreditCard,
+      titulo: 'ATÉ 4X SEM JUROS',
+      subtitulo: 'Parcelamento no cartão de crédito',
+      bgColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
+      boxBg: 'hover:bg-purple-50/50',
+      borderColor: 'border-purple-200',
+      tagColor: 'text-purple-700',
+    },
+    {
+      icon: Store,
+      titulo: 'ATACADO & PET SHOPS',
+      subtitulo: 'Condições para revenda e banho e tosa',
       bgColor: 'bg-gradient-to-br from-sky-500 to-blue-600',
       boxBg: 'hover:bg-sky-50/50',
       borderColor: 'border-sky-200',

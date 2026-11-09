@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getFamilyConfig } from '@/lib/familyManager';
-import { ordenarProdutosPorQuantidade } from '@/lib/quantityExtractor';
+import { ordenarProdutosPorQuantidade, calcularPrecoUnitario } from '@/lib/quantityExtractor';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
 import ProductMediaGallery from '@/components/ProductMediaGallery';
+import ProductCard from '@/components/ProductCard';
 import { extractImageUrls } from '@/lib/imageExtractor';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
@@ -13,6 +14,7 @@ import AddToCartButtons from '@/components/AddToCartButtons';
 import SafeComponent from '@/components/SafeComponent';
 import { notFound } from 'next/navigation';
 import { hasValidPhoto } from '@/lib/productFilter';
+import { Sparkles, Tag, ShieldCheck, Factory } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +33,7 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
     const { data: pId } = await supabase.from('produtos').select('*').eq('id', raw).maybeSingle();
     if (pId) return pId;
 
-    // 3. Busca exata por código de barras ou SKU (campo codigo_barras)
+    // 3. Busca exata por código de barras ou SKU
     const { data: pBarra } = await supabase.from('produtos').select('*').eq('codigo_barras', raw).maybeSingle();
     if (pBarra) return pBarra;
   } catch (err) {
@@ -77,7 +79,6 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   // Regra Estrita: produto SÓ aparece na tela de vendas se tiver foto
   if (!rawProduto || !hasValidPhoto(rawProduto)) notFound();
 
-  // O produto ativo é exatamente o produto individual clicado pelo cliente
   const produto = { ...rawProduto };
 
   // Buscar família de variações permanente completa
@@ -123,11 +124,36 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   const parcelas = 3;
   const valorParcela = precoAtual / parcelas;
 
+  // Cálculo de economia por unidade no kit
+  const infoUnitario = calcularPrecoUnitario(produto.nome || '', precoAtual);
+
+  // Buscar produtos complementares (da mesma categoria ou ativos com foto)
+  let complementares: any[] = [];
+  try {
+    let queryComp = supabase
+      .from('produtos')
+      .select('id, nome, slug, preco, preco_promocional, imagens, ativo')
+      .eq('ativo', true)
+      .neq('id', produto.id)
+      .limit(8);
+
+    if (produto.categoria_id) {
+      queryComp = queryComp.eq('categoria_id', produto.categoria_id);
+    }
+
+    const { data: compData } = await queryComp;
+    if (compData && compData.length > 0) {
+      complementares = compData.filter(hasValidPhoto).slice(0, 4);
+    }
+  } catch (e) {
+    console.warn('[PRODUTOS COMPLEMENTARES]', e);
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-2 md:py-12">
+    <div className="max-w-7xl mx-auto px-4 py-4 md:py-10 space-y-10">
 
       {/* ── Bloco principal: Foto | Info ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-10 mb-6 md:mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
 
         {/* COLUNA ESQUERDA — Galeria de fotos e vídeo */}
         <SafeComponent>
@@ -139,43 +165,63 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           />
         </SafeComponent>
 
-        {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
+        {/* COLUNA DIREITA — Nome, preço, economia unitária, variações, botões, frete */}
         <div className="flex flex-col gap-4">
 
+          {/* Selo de Fabricação Própria */}
+          <div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-900 border border-orange-200 text-[11px] font-black uppercase px-2.5 py-1 rounded-full w-fit">
+            <Factory size={13} className="text-primary" />
+            <span>Fabricação Própria Mimo Show — Direto da Fábrica</span>
+          </div>
+
           {/* Nome */}
-          <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary leading-tight">
+          <h1 className="text-2xl md:text-3xl font-heading font-black text-secondary leading-tight">
             {produto.nome || 'Produto'}
           </h1>
 
-          {/* Preço */}
-          <div className="flex items-end gap-3">
-            {precoPromo ? (
-              <>
-                <span className="text-lg text-gray-400 line-through">R$ {preco.toFixed(2).replace('.', ',')}</span>
-                <span className="text-4xl font-black text-primary">R$ {precoPromo.toFixed(2).replace('.', ',')}</span>
-              </>
-            ) : (
-              <span className="text-4xl font-black text-primary block">R$ {preco.toFixed(2).replace('.', ',')}</span>
-            )}
-            {promoValida && produto.promocao_expira_em && (
-              <div className="ml-2">
-                <SafeComponent>
-                  <CountdownTimer targetDate={produto.promocao_expira_em} />
-                </SafeComponent>
+          {/* Preço e Economia por Unidade */}
+          <div className="space-y-1 bg-gray-50/80 p-4 rounded-2xl border border-gray-200/80">
+            <div className="flex items-end gap-3 flex-wrap">
+              {precoPromo ? (
+                <>
+                  <span className="text-base text-gray-400 line-through">R$ {preco.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-3xl md:text-4xl font-black text-primary">R$ {precoPromo.toFixed(2).replace('.', ',')}</span>
+                </>
+              ) : (
+                <span className="text-3xl md:text-4xl font-black text-primary block">R$ {preco.toFixed(2).replace('.', ',')}</span>
+              )}
+              {promoValida && produto.promocao_expira_em && (
+                <div className="ml-2">
+                  <SafeComponent>
+                    <CountdownTimer targetDate={produto.promocao_expira_em} />
+                  </SafeComponent>
+                </div>
+              )}
+            </div>
+
+            {/* Destaque de Economia Real por Unidade no Kit */}
+            {infoUnitario && infoUnitario.quantidade > 1 && (
+              <div className="pt-1.5 flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                <Tag size={14} className="text-emerald-600" />
+                <span>
+                  Apenas <strong>{infoUnitario.textoFormatado}</strong> por unidade no kit ({infoUnitario.quantidade} un)
+                </span>
               </div>
             )}
-          </div>
 
-          {/* Parcelamento estilo Mercado Livre */}
-          <div className="text-sm md:text-base font-semibold text-emerald-600">
-            {'💳'} em {parcelas}x de R$ {valorParcela.toFixed(2).replace('.', ',')} sem juros
+            {/* Parcelamento */}
+            <div className="text-xs md:text-sm font-semibold text-emerald-700 pt-1">
+              💳 em até <strong>{parcelas}x de R$ {valorParcela.toFixed(2).replace('.', ',')}</strong> sem juros no cartão
+            </div>
           </div>
 
           {/* Variações da Família */}
           {temVariacoes && (
             <SafeComponent>
-              <div>
-                <p className="text-sm font-bold text-gray-500 mb-2">Escolha uma opção:</p>
+              <div className="bg-white p-3 rounded-xl border border-gray-200">
+                <p className="text-xs font-black uppercase text-gray-600 mb-2 tracking-wider">
+                  Escolha a quantidade ou kit desejado:
+                </p>
                 <VariationSelector currentSlug={rawProduto.slug} family={family || []} customOrderIds={customOrderIds} />
               </div>
             </SafeComponent>
@@ -184,10 +230,10 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           {/* Tamanhos (se houver) */}
           {Array.isArray(produto.tamanhos) && produto.tamanhos.length > 0 && (
             <div>
-              <p className="text-sm font-bold text-gray-500 mb-2">Tamanho:</p>
+              <p className="text-xs font-bold text-gray-500 mb-1">Tamanho:</p>
               <div className="flex gap-2 flex-wrap">
                 {produto.tamanhos.map((tam: string) => (
-                  <button key={tam} className="px-4 py-2 rounded-lg border-2 border-border font-bold text-secondary hover:border-primary transition text-sm">
+                  <button key={tam} className="px-3 py-1.5 rounded-lg border-2 border-border font-bold text-secondary hover:border-primary transition text-xs">
                     {tam}
                   </button>
                 ))}
@@ -200,7 +246,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             <AddToCartButtons produto={produto} />
           </SafeComponent>
 
-          {/* Cupons da Loja Disponíveis (Shopee Style) */}
+          {/* Cupons da Loja Disponíveis */}
           <SafeComponent>
             <ProductCouponsBanner
               produtoId={produto.id}
@@ -221,23 +267,81 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
           {/* Estoque */}
           {Number(produto.estoque) > 0 && Number(produto.estoque) < 20 && (
-            <p className="text-orange-600 font-bold text-sm">⚠️ Apenas {produto.estoque} em estoque!</p>
+            <p className="text-orange-600 font-bold text-xs">⚠️ Restam apenas {produto.estoque} kits em estoque!</p>
           )}
         </div>
       </div>
 
       {/* ── Descrição completa abaixo ── */}
       {(produto.descricao_curta || produto.descricao) && (
-        <div className="border-t border-border pt-10">
-          <h2 className="text-2xl font-heading font-bold text-secondary mb-6">Descrição do Produto</h2>
+        <div className="border-t border-border pt-8 bg-white p-6 sm:p-8 rounded-3xl shadow-xs">
+          <h2 className="text-xl sm:text-2xl font-heading font-black text-secondary mb-4">
+            Especificações & Descrição do Produto
+          </h2>
           <div
-            className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+            className="text-gray-700 leading-relaxed text-sm prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: String(produto.descricao_curta || produto.descricao || "").replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, "$1<br />$2") }}
           />
         </div>
       )}
 
+      {/* ── SEÇÃO: PRODUTOS COMPLEMENTARES (COMPRE JUNTO) ── */}
+      {complementares.length > 0 && (
+        <div className="border-t border-border pt-10 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-black uppercase text-primary tracking-wider block">
+                Complete seu Estoque
+              </span>
+              <h2 className="text-xl sm:text-2xl font-heading font-black text-secondary">
+                Quem comprou este kit também levou
+              </h2>
+            </div>
+            <Link href="/" className="text-xs font-bold text-secondary hover:text-primary transition underline">
+              Ver mais na loja
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            {complementares.map((comp) => (
+              <SafeComponent key={comp.id}>
+                <ProductCard produto={comp} />
+              </SafeComponent>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Schema.org Structured Data (Google Rich Snippets) ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org/',
+            '@type': 'Product',
+            name: produto.nome,
+            image: extractImageUrls(produto.imagens),
+            description: produto.descricao_curta || produto.descricao || produto.nome,
+            sku: produto.codigo_barras || produto.sku || produto.id,
+            brand: {
+              '@type': 'Brand',
+              name: 'Mimo Show',
+            },
+            offers: {
+              '@type': 'Offer',
+              url: `https://www.mimoshow.com.br/produto/${produto.slug}`,
+              priceCurrency: 'BRL',
+              price: precoAtual,
+              availability: Number(produto.estoque ?? 1) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              seller: {
+                '@type': 'Organization',
+                name: 'Mimo Show',
+              },
+            },
+          }),
+        }}
+      />
+
     </div>
   );
 }
-

@@ -35,12 +35,10 @@ export default function CarrinhoPage() {
           }));
           setItens(comImagensValidas);
         } else {
-          setItens(getExemploInicial());
+          setItens([]);
         }
       } else {
-        const exemplo = getExemploInicial();
-        setItens(exemplo);
-        localStorage.setItem('carrinho', JSON.stringify(exemplo));
+        setItens([]);
       }
 
       // Restaurar cupom aplicado salvo
@@ -49,7 +47,7 @@ export default function CarrinhoPage() {
         setCupomAplicado(JSON.parse(cupomSalvo));
       }
     } catch {
-      setItens(getExemploInicial());
+      setItens([]);
     }
 
     // Carregar cupons disponíveis do backend

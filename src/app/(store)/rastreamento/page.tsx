@@ -29,11 +29,13 @@ function RastreamentoContent() {
 
   useEffect(() => {
     const statusParam = searchParams.get('status') || searchParams.get('collection_status');
-    if (queryPedido && (statusParam === 'sucesso' || statusParam === 'approved' || statusParam === 'success')) {
+    const paymentIdParam = searchParams.get('payment_id') || searchParams.get('collection_id');
+
+    if (queryPedido && paymentIdParam && (statusParam === 'sucesso' || statusParam === 'approved' || statusParam === 'success')) {
       fetch('/api/pedidos/confirmar-pagamento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numeroPedido: queryPedido })
+        body: JSON.stringify({ numeroPedido: queryPedido, paymentId: paymentIdParam })
       }).then(() => handleBuscar(queryPedido)).catch(() => handleBuscar(queryPedido));
     } else if (queryPedido) {
       handleBuscar(queryPedido);

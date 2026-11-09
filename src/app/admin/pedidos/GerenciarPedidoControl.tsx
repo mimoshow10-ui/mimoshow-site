@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { atualizarStatusPedido, transmitirPedidoBling } from './actions';
-import { CheckCircle2, Clock, Truck, PackageCheck, AlertCircle, RefreshCw, Send, Save, Mail, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, PackageCheck, AlertCircle, RefreshCw, Send, Save, ExternalLink } from 'lucide-react';
 
 interface Props {
   pedido: {
@@ -12,6 +12,7 @@ interface Props {
     codigo_rastreio?: string;
     bling_status?: string;
     bling_id?: string;
+    bling_erro?: string;
     cliente?: {
       nome_completo?: string;
       email?: string;
@@ -87,7 +88,7 @@ export default function GerenciarPedidoControl({ pedido }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Formulario de Alteracao de Status e Rastreamento */}
+        {/* Formulário de Alteração de Status e Rastreamento */}
         <form onSubmit={handleStatusSubmit} className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
           <h3 className="font-bold text-xs uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
             <Save size={14} className="text-primary" /> Alterar Status do Pedido & Rastreio
@@ -101,7 +102,7 @@ export default function GerenciarPedidoControl({ pedido }: Props) {
               className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white font-bold text-secondary cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <option value="AGUARDANDO_PAGAMENTO">⏳ Aguardando Pagamento</option>
-              <option value="PAGAMENTO_APROVADO">✔️ Pagamento Aprovado (Enviar p/ Bling)</option>
+              <option value="PAGAMENTO_APROVADO">✔️ Pagamento Aprovado (Disparar Bling)</option>
               <option value="EM_SEPARACAO">📦 Em Separação no Estoque</option>
               <option value="ENVIADO">🚚 Enviado ao Cliente (Em Trânsito)</option>
               <option value="ENTREGUE">🎁 Entregue ao Destinatário</option>
@@ -137,13 +138,18 @@ export default function GerenciarPedidoControl({ pedido }: Props) {
               <PackageCheck size={14} className="text-blue-600" /> Sincronização com o Bling ERP
             </h3>
             
-            <p className="text-xs text-gray-600 leading-relaxed mb-4">
-              Status atual no Bling: {pedido.bling_status === 'OK' ? (
+            <div className="text-xs text-gray-600 leading-relaxed mb-4">
+              Status atual no Bling:{' '}
+              {pedido.bling_status === 'OK' ? (
                 <span className="font-bold text-blue-700">✔️ Transmitido (ID: #{pedido.bling_id || 'OK'})</span>
+              ) : pedido.bling_status === 'ERRO' ? (
+                <span className="font-bold text-red-700">⚠️ Erro na transmissão (tentar novamente)</span>
+              ) : pedido.bling_status === 'FILA' ? (
+                <span className="font-bold text-amber-700">⏳ Na fila de envio automático</span>
               ) : (
-                <span className="font-bold text-amber-700">⏳ Pendente de envio</span>
+                <span className="font-bold text-gray-500">⏳ Aguardando confirmação do pagamento</span>
               )}
-            </p>
+            </div>
 
             <button
               type="button"
@@ -152,11 +158,17 @@ export default function GerenciarPedidoControl({ pedido }: Props) {
               className="w-full bg-secondary hover:bg-blue-900 text-white font-bold py-2.5 px-4 rounded-xl transition text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
             >
               {loadingBling ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
-              <span>{pedido.bling_status === 'OK' ? 'Reenviar Pedido ao Bling' : 'Transmitir Pedido ao Bling Agora'}</span>
+              <span>
+                {pedido.bling_status === 'OK'
+                  ? 'Reenviar Pedido ao Bling'
+                  : pedido.bling_status === 'ERRO'
+                  ? 'Tentar Reenviar ao Bling Agora'
+                  : 'Transmitir Pedido ao Bling Agora'}
+              </span>
             </button>
           </div>
 
-          {/* Link de Rastreio Publico do Cliente */}
+          {/* Link de Rastreio Público do Cliente */}
           <div className="pt-3 border-t border-gray-200">
             <span className="text-[11px] font-bold text-gray-500 uppercase block mb-1">Página de Rastreio do Cliente:</span>
             <a
@@ -165,7 +177,7 @@ export default function GerenciarPedidoControl({ pedido }: Props) {
               rel="noreferrer"
               className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
             >
-              <span>banhoetosapet.com.br/rastreamento?pedido={pedido.numero_pedido}</span>
+              <span>mimoshow.com.br/rastreamento?pedido={pedido.numero_pedido}</span>
               <ExternalLink size={12} />
             </a>
           </div>

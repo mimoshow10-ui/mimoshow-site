@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users, Ticket } from 'lucide-react';
+import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users, Ticket, Compass } from 'lucide-react';
 
 export default async function AdminLayout({
   children,
@@ -70,6 +70,11 @@ export default async function AdminLayout({
           <Link href="/admin/marketing" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
             <Settings size={18} className="text-blue-300" />
             <span>Marketing (Banners)</span>
+          </Link>
+
+          <Link href="/admin/marketing#encontre-rapido" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-pink-950/40 hover:bg-pink-900/60 transition text-xs font-bold text-pink-200 border border-pink-500/20">
+            <Compass size={18} className="text-pink-400" />
+            <span>Encontre Rápido (Home)</span>
           </Link>
 
           <Link href="/admin/configuracoes" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">

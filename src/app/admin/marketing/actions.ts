@@ -373,3 +373,67 @@ export async function dispararEmailTeste(formData: FormData) {
     return { sucesso: false, erro: err.message || 'Erro ao disparar e-mail de teste.' };
   }
 }
+
+export async function salvarEncontreRapido(formData: FormData) {
+  try {
+    const segmentosJsonStr = formData.get('segmentos_json') as string;
+    let items: Array<{
+      id: string;
+      nome: string;
+      subtitulo: string;
+      link_url: string;
+      imagem_url: string;
+      tag?: string;
+      ativo: boolean;
+    }> = [];
+
+    if (segmentosJsonStr) {
+      try {
+        items = JSON.parse(segmentosJsonStr);
+      } catch (e) {}
+    }
+
+    // Processar uploads de fotos para cada segmento
+    for (let i = 0; i < items.length; i++) {
+      const file = formData.get(`foto_file_${i}`) as File;
+      if (file && file.size > 0) {
+        const buffer = await file.arrayBuffer();
+        const ext = file.name.split('.').pop() || 'jpg';
+        const fileName = `segmento_${Date.now()}_${i}.${ext}`;
+
+        const { data, error } = await supabase.storage
+          .from('produtos-fotos')
+          .upload(`encontre-rapido/${fileName}`, buffer, {
+            contentType: file.type,
+            upsert: true,
+          });
+
+        if (data) {
+          const { data: pubData } = supabase.storage
+            .from('produtos-fotos')
+            .getPublicUrl(`encontre-rapido/${fileName}`);
+          items[i].imagem_url = pubData.publicUrl;
+        }
+      }
+    }
+
+    const { error } = await supabase.from('configuracoes').upsert(
+      {
+        chave: 'encontre_rapido_segmentos',
+        valor: items,
+      },
+      { onConflict: 'chave' }
+    );
+
+    if (error) {
+      return { sucesso: false, erro: 'Erro ao salvar Encontre Rápido: ' + error.message };
+    }
+
+    revalidatePath('/');
+    revalidatePath('/admin/marketing');
+    return { sucesso: true, mensagem: 'Segmentos do Encontre Rápido atualizados com sucesso!' };
+  } catch (err: any) {
+    return { sucesso: false, erro: err.message || 'Erro ao processar segmentos do Encontre Rápido.' };
+  }
+}
+

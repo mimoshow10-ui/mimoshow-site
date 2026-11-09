@@ -2,9 +2,11 @@
 
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { sincronizarPedidoComBling } from '@/lib/bling/syncQueue';
+import { enviarPedidoVendaBling } from '@/lib/bling/blingService';
 
 /**
- * Atualiza o status do pedido, codigo de rastreamento e historico no banco de dados.
+ * Atualiza o status do pedido, código de rastreamento e dispara sincronização com o Bling se o pagamento for aprovado.
  */
 export async function atualizarStatusPedido(formData: FormData) {
   try {
@@ -20,9 +22,9 @@ export async function atualizarStatusPedido(formData: FormData) {
       .from('configuracoes')
       .select('valor')
       .eq('chave', 'pedidos_db')
-      .single();
+      .maybeSingle();
 
-    let pedidos: any[] = config?.valor || [];
+    let pedidos: any[] = Array.isArray(config?.valor) ? config.valor : [];
     const idx = pedidos.findIndex(p => p.id === pedidoId || p.numero_pedido === pedidoId);
 
     if (idx === -1) {
@@ -30,26 +32,12 @@ export async function atualizarStatusPedido(formData: FormData) {
     }
 
     const pedido = pedidos[idx];
+    const statusAnterior = pedido.status;
     pedido.status = novoStatus;
     if (codigoRastreio) {
       pedido.codigo_rastreio = codigoRastreio.trim().toUpperCase();
     }
     pedido.atualizado_em = new Date().toISOString();
-
-    // Se o pagamento for aprovado e o Bling ainda nao tiver recebido, tenta enviar ao Bling automaticamente
-    let msgBling = '';
-    if ((novoStatus === 'PAGAMENTO_APROVADO' || novoStatus === 'ENVIADO') && pedido.bling_status !== 'OK') {
-      try {
-        const resBling = await enviarPedidoBlingInterno(pedido);
-        if (resBling.sucesso) {
-          pedido.bling_status = 'OK';
-          pedido.bling_id = resBling.bling_id;
-          msgBling = ` | Transmitido ao Bling (#${resBling.bling_id})`;
-        }
-      } catch (e: any) {
-        console.error('[ERRO BLING AUTOMATICO]', e);
-      }
-    }
 
     pedidos[idx] = pedido;
 
@@ -62,6 +50,23 @@ export async function atualizarStatusPedido(formData: FormData) {
       return { sucesso: false, erro: 'Erro ao salvar alteração: ' + error.message };
     }
 
+    // Se o pagamento for aprovado (e antes não era) e o Bling ainda não tiver recebido, sincronizar com o Bling
+    let msgBling = '';
+    if ((novoStatus === 'PAGAMENTO_APROVADO' || novoStatus === 'ENVIADO') && pedido.bling_status !== 'OK') {
+      try {
+        const resSync = await sincronizarPedidoComBling(pedidoId, {
+          origemChamada: 'painel_admin',
+        });
+        if (resSync.sucesso) {
+          msgBling = ` | Transmitido ao Bling (#${resSync.bling_id})`;
+        } else {
+          msgBling = ` | Agendado na fila do Bling`;
+        }
+      } catch (e: any) {
+        console.error('[ERRO BLING AO ALTERAR STATUS]', e);
+      }
+    }
+
     revalidatePath(`/admin/pedidos/${pedidoId}`);
     revalidatePath('/admin/pedidos');
     return { sucesso: true, mensagem: `Status atualizado para ${novoStatus}${msgBling}!` };
@@ -71,43 +76,33 @@ export async function atualizarStatusPedido(formData: FormData) {
 }
 
 /**
- * Transmite manualmente um pedido para o Bling ERP (API V3)
+ * Transmite manualmente um pedido para o Bling ERP (API V3) com recuperação automática de tokens.
+ * Mantém o acionamento manual como recurso de contingência para o lojista.
  */
 export async function transmitirPedidoBling(formData: FormData) {
   try {
     const pedidoId = formData.get('pedido_id') as string;
     if (!pedidoId) return { sucesso: false, erro: 'ID do pedido é obrigatório.' };
 
-    const { data: config } = await supabase
-      .from('configuracoes')
-      .select('valor')
-      .eq('chave', 'pedidos_db')
-      .single();
+    const resSync = await sincronizarPedidoComBling(pedidoId, {
+      forcarReenvio: true,
+      origemChamada: 'painel_admin_manual',
+    });
 
-    let pedidos: any[] = config?.valor || [];
-    const idx = pedidos.findIndex(p => p.id === pedidoId || p.numero_pedido === pedidoId);
+    revalidatePath(`/admin/pedidos/${pedidoId}`);
+    revalidatePath('/admin/pedidos');
 
-    if (idx === -1) return { sucesso: false, erro: 'Pedido não encontrado.' };
-
-    const pedido = pedidos[idx];
-    const resBling = await enviarPedidoBlingInterno(pedido);
-
-    if (resBling.sucesso) {
-      pedido.bling_status = 'OK';
-      pedido.bling_id = resBling.bling_id;
-      pedido.atualizado_em = new Date().toISOString();
-      pedidos[idx] = pedido;
-
-      await supabase.from('configuracoes').upsert(
-        { chave: 'pedidos_db', valor: pedidos },
-        { onConflict: 'chave' }
-      );
-
-      revalidatePath(`/admin/pedidos/${pedidoId}`);
-      revalidatePath('/admin/pedidos');
-      return { sucesso: true, mensagem: `Pedido transmitido ao Bling com sucesso! ID no Bling: #${resBling.bling_id}` };
+    if (resSync.sucesso) {
+      return {
+        sucesso: true,
+        mensagem: `Pedido transmitido ao Bling com sucesso! ID no Bling: #${resSync.bling_id}`,
+        bling_id: resSync.bling_id,
+      };
     } else {
-      return { sucesso: false, erro: resBling.erro || 'Erro ao transmitir pedido ao Bling.' };
+      return {
+        sucesso: false,
+        erro: resSync.mensagem || 'Erro ao transmitir pedido ao Bling.',
+      };
     }
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao conectar com o Bling.' };
@@ -115,170 +110,13 @@ export async function transmitirPedidoBling(formData: FormData) {
 }
 
 /**
- * Funcao interna de integracao com Bling V3 API
+ * Função interna mantida para retrocompatibilidade
  */
 export async function enviarPedidoBlingInterno(pedido: any): Promise<{ sucesso: boolean; bling_id?: string; erro?: string }> {
-  try {
-    const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_tokens').single();
-    let token = cfg?.valor?.access_token;
-    const refreshToken = cfg?.valor?.refresh_token;
-
-    const { data: creds } = await supabase.from('configuracoes').select('valor').eq('chave', 'bling_credentials').single();
-    const clientId = creds?.valor?.client_id;
-    const clientSecret = creds?.valor?.client_secret;
-
-    if (!token && refreshToken && clientId && clientSecret) {
-      const resToken = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
-        },
-        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken })
-      });
-      const tokenData = await resToken.json();
-      if (tokenData.access_token) {
-        token = tokenData.access_token;
-        await supabase.from('configuracoes').upsert({
-          chave: 'bling_tokens',
-          valor: { access_token: tokenData.access_token, refresh_token: tokenData.refresh_token || refreshToken }
-        }, { onConflict: 'chave' });
-      }
-    }
-
-    if (!token) {
-      return { sucesso: false, erro: 'Token do Bling não configurado nas Configurações.' };
-    }
-
-    // 1. Procurar ou criar o contato no Bling
-    let contatoId = null;
-    const cpfCnpjLimpo = (pedido.cliente?.cpf_cnpj || '').replace(/\D/g, '');
-    const isJ = cpfCnpjLimpo.length > 14 ? 'J' : 'F';
-    
-    if (cpfCnpjLimpo) {
-      // Tentar buscar contato por documento
-      const resBusca = await fetch(`https://api.bling.com.br/Api/v3/contatos?numeroDocumento=${cpfCnpjLimpo}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataBusca = await resBusca.json();
-      if (dataBusca?.data?.length > 0) {
-        contatoId = dataBusca.data[0].id;
-      } else {
-        // Criar contato
-        const resCria = await fetch('https://api.bling.com.br/Api/v3/contatos', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: pedido.cliente?.nome_completo || 'Cliente Site',
-            tipo: isJ,
-            situacao: 'A',
-            numeroDocumento: cpfCnpjLimpo,
-            email: pedido.cliente?.email || '',
-            telefone: (pedido.cliente?.telefone || '').replace(/\D/g, '')
-          })
-        });
-        const dataCria = await resCria.json();
-        if (dataCria?.data?.id) {
-          contatoId = dataCria.data.id;
-        }
-      }
-    }
-
-    if (!contatoId) {
-      // Tentar contato genérico caso n\u00e3o tenha CPF/CNPJ ou tenha falhado
-      const resCriaGen = await fetch('https://api.bling.com.br/Api/v3/contatos', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: pedido.cliente?.nome_completo || 'Cliente Site'
-          })
-      });
-      const dataCriaGen = await resCriaGen.json();
-      contatoId = dataCriaGen?.data?.id;
-    }
-
-    if (!contatoId) {
-      return { sucesso: false, erro: 'Bling exige ID do contato e falhou ao criar' };
-    }
-
-    const { data: prods } = await supabase.from('produtos').select('sku, bling_id');
-    const prodsMap = new Map((prods || []).map(p => [p.sku, p.bling_id]));
-    
-    // Payload de Vendas Bling API V3
-    
-    // Procurar IDs de produtos faltantes no Bling pelo SKU
-    for (const item of (pedido.itens || [])) {
-      if (item.sku && !prodsMap.get(item.sku) && !item.bling_id) {
-        try {
-          const resProd = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${item.sku}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const dataProd = await resProd.json();
-          if (dataProd?.data?.length > 0) {
-            prodsMap.set(item.sku, dataProd.data[0].id);
-          }
-        } catch(e) {}
-      }
-    }
-    
-    let descontoCalc = (pedido.subtotal || 0) + (pedido.valor_frete || 0) - (pedido.total || 0);
-    if (descontoCalc < 0) descontoCalc = 0;
-
-    const payloadBling = {
-      numeroLoja: String(pedido.numero_pedido),
-      data: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
-      dataSaida: new Date(pedido.criado_em || Date.now()).toISOString().split('T')[0],
-      contato: {
-        id: contatoId,
-        nome: pedido.cliente?.nome_completo || 'Cliente Site',
-        numeroDocumento: cpfCnpjLimpo
-      },
-      itens: (pedido.itens || []).map((item: any) => ({
-          ...(item.bling_id ? { produto: { id: parseInt(item.bling_id) } } : {}),
-        codigo: item.sku || '',
-        ...(prodsMap.get(item.sku) ? { produto: { id: parseInt(prodsMap.get(item.sku)) } } : {}),
-        descricao: item.nome || 'Produto',
-        quantidade: item.quantidade || 1,
-        valor: item.preco_unitario || 0
-      })),
-      desconto: { valor: Number(descontoCalc.toFixed(2)) },
-      transporte: {
-        fretePorConta: 0,
-        frete: pedido.valor_frete || 0,
-        etiqueta: {
-          nome: pedido.cliente?.nome_completo,
-          endereco: pedido.endereco_entrega?.logradouro,
-          numero: pedido.endereco_entrega?.numero,
-          complemento: pedido.endereco_entrega?.complemento,
-          municipio: pedido.endereco_entrega?.cidade,
-          uf: pedido.endereco_entrega?.uf,
-          cep: (pedido.endereco_entrega?.cep || '').replace(/\D/g, ''),
-          bairro: pedido.endereco_entrega?.bairro
-        }
-      }
-    };
-
-    const resBling = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payloadBling)
-    });
-
-    const resData = await resBling.json();
-    if (resBling.ok && resData?.data?.id) {
-      return { sucesso: true, bling_id: String(resData.data.id) };
-    } else {
-      let errMsg = resData?.error?.message || resData?.description || JSON.stringify(resData);
-      if (resData?.error?.fields) {
-          const fieldErrs = resData.error.fields.map((f) => f.msg).join('; ');
-          errMsg += ` (Detalhes: ${fieldErrs})`;
-      }
-      return { sucesso: false, erro: `Bling retornou erro: ${errMsg}` };
-    }
-  } catch (e: any) {
-    return { sucesso: false, erro: e.message || 'Exceção ao conectar no Bling' };
-  }
+  const res = await enviarPedidoVendaBling(pedido, true);
+  return {
+    sucesso: res.sucesso,
+    bling_id: res.bling_id,
+    erro: res.erro,
+  };
 }

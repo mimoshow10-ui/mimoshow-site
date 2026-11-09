@@ -51,10 +51,12 @@ export default function HomeCouponsBanner() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {listaExibida.map((c) => {
             const isColetado = !!coletados[c.codigo!];
-            const badgeTexto = c.tipo === 'percentual'
-              ? `${c.valor}% OFF`
-              : c.tipo === 'fixo'
-              ? `R$ ${c.valor} OFF`
+            const tipo = (c as any).tipo_desconto || c.tipo;
+            const valor = (c as any).valor_desconto !== undefined ? (c as any).valor_desconto : c.valor;
+            const badgeTexto = tipo === 'percentual'
+              ? `${valor}% OFF`
+              : tipo === 'fixo'
+              ? `R$ ${valor} OFF`
               : 'FRETE GRÁTIS';
 
             return (

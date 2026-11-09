@@ -10,6 +10,8 @@ import BenefitsBar from "@/components/BenefitsBar";
 import DesktopSideBanners from "@/components/DesktopSideBanners";
 import QuemSomosSection from "@/components/QuemSomosSection";
 import OfficialDistributorSection from "@/components/OfficialDistributorSection";
+import QuickCategoryShortcuts from "@/components/QuickCategoryShortcuts";
+import QuemConfiaSection from "@/components/QuemConfiaSection";
 
 import { hasValidPhoto } from "@/lib/productFilter";
 import { getOcultosVitrine } from "@/lib/vitrineManager";
@@ -44,12 +46,10 @@ export default async function Home() {
   const destaquesConfig = configs?.find(c => c.chave === 'vitrine_destaques')?.valor || { mais_vendidos: [], novidades: [] };
   const idsNovidades: string[] = destaquesConfig.novidades || [];
   const idsMaisVendidos: string[] = destaquesConfig.mais_vendidos || [];
-  const novidadesSet = new Set(idsNovidades);
-  const maisVendidosSet = new Set(idsMaisVendidos);
 
   const explicitIds = Array.from(new Set([...idsNovidades, ...idsMaisVendidos]));
 
-  // Buscar produtos explicitamente selecionados por ID ou SKU para garantir exibicao imediata
+  // Buscar produtos explicitamente selecionados por ID ou SKU
   let produtosEspecificos: any[] = [];
   if (explicitIds.length > 0) {
     const { data: specById } = await supabase
@@ -72,7 +72,7 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
-  // Buscar todos os produtos em promoção (destaque super promoção ou com preço promocional ativo)
+  // Buscar todos os produtos em promoção
   const { data: superPromocoes } = await supabase
     .from('produtos')
     .select('*')
@@ -83,20 +83,18 @@ export default async function Home() {
   const produtos = (todosProdutos || []).filter(p => !ocultosVitrine.has(String(p.id)));
   const produtosComFoto = produtos.filter(hasValidPhoto);
 
-  // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA E DENTRO DO PERIODO
+  // Apenas produtos com promoção explicitamente válida
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
-      if (!hasValidPhoto(prod)) return false;
+    if (!hasValidPhoto(prod)) return false;
     if (ocultosVitrine.has(String(prod.id))) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     
-    // Checagem do Inicio da Promocao (se cadastrado)
     if (prod.promocao_inicio_em) {
       const inicio = new Date(prod.promocao_inicio_em).getTime();
       if (!isNaN(inicio) && inicio > agora) return false;
     }
 
-    // Checagem de Validade / Fim da Promocao (se cadastrado)
     if (prod.promocao_expira_em) {
       const expira = new Date(prod.promocao_expira_em).getTime();
       if (isNaN(expira) || expira <= agora) return false;
@@ -105,7 +103,7 @@ export default async function Home() {
     return true;
   });
 
-  // Mapeador de produtos por ID e SKU para manter a ordem exata escolhida pelo usuario no Admin
+  // Mapeador de produtos por ID e SKU
   const prodMap = new Map<string, any>();
   produtos.forEach(p => {
     prodMap.set(p.id, p);
@@ -116,7 +114,7 @@ export default async function Home() {
     if (p.sku) prodMap.set(p.sku, p);
   });
 
-  // Novidades: APENAS produtos com foto valida
+  // Novidades
   let produtosNovidades = idsNovidades
     .map(id => prodMap.get(id))
     .filter(hasValidPhoto);
@@ -125,7 +123,7 @@ export default async function Home() {
     produtosNovidades = produtosComFoto.slice(0, 12);
   }
 
-  // Mais Vendidos: APENAS produtos com foto valida
+  // Mais Vendidos
   let produtosMaisVendidos = idsMaisVendidos
     .map(id => prodMap.get(id))
     .filter(hasValidPhoto);
@@ -136,7 +134,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen relative">
-      {/* BANNERS LATERAIS PARA COMPUTADOR (DISTRIBUIDOR OFICIAL NA DIREITA + OFERTAS ROTATIVAS 3S NA ESQUERDA) */}
+      {/* BANNERS LATERAIS PARA COMPUTADOR */}
       <DesktopSideBanners 
         produtosPromocao={produtosPromocao.length > 0 ? produtosPromocao : (produtosNovidades.length > 0 ? produtosNovidades : produtosMaisVendidos)} 
       />
@@ -144,27 +142,33 @@ export default async function Home() {
       {/* 1. FAIXA DE CUPONS NO TOPO */}
       {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
-      {/* BANNER PRINCIPAL COM CARROSEL (FOTOS DOS ANIMAIS NO TAMANHO ORIGINAL) */}
-      <section className="w-full">
-        <BannerCarousel banners={banners} />
-      </section>
+      {/* CONTAINER PRINCIPAL DO TOPO */}
+      <div className="max-w-7xl xl:max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 w-full">
+        {/* CARROSSEL DE BANNERS */}
+        <section className="w-full rounded-2xl overflow-hidden shadow-xs">
+          <BannerCarousel banners={banners} />
+        </section>
+      </div>
 
       {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO BANNER */}
       {posicaoCupons === 'abaixo_banner' && <HomeCouponsBanner />}
 
-      {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS */}
+      {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS INDUSTRIAIS */}
       <BenefitsBar />
 
       {/* 3. FAIXA DE CUPONS ABAIXO DOS BENEFÍCIOS */}
       {posicaoCupons === 'abaixo_beneficios' && <HomeCouponsBanner />}
 
       {/* SEÇÃO PRINCIPAL DE VITRINE DA LOJA */}
-      <div className="max-w-7xl xl:max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 w-full">
+      <div className="max-w-7xl xl:max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 w-full">
         
-        {/* 4. FAIXA DE CUPONS ACIMA DAS OFERTAS */}
+        {/* 4. ATALHOS VISUAIS PARA CATEGORIAS CHAVE */}
+        <QuickCategoryShortcuts />
+
+        {/* 5. FAIXA DE CUPONS ACIMA DAS OFERTAS */}
         {posicaoCupons === 'acima_ofertas' && <HomeCouponsBanner />}
 
-        {/* 1. Super Promoção do Dia (APENAS DENTRO DO PERÍODO) */}
+        {/* 6. SUPER PROMOÇÃO (QUANDO ATIVA E PERTINENTE) */}
         {produtosPromocao.length > 0 && (
           <section className="py-8 px-6 bg-red-50/60 rounded-3xl border border-red-100 shadow-xs">
             <div className="flex justify-between items-end mb-6">
@@ -172,7 +176,7 @@ export default async function Home() {
                 <h2 className="text-2xl md:text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
                   🔥 Super Ofertas por Tempo Limitado
                 </h2>
-                <p className="text-red-500 font-bold text-xs md:text-sm mt-0.5">Ofertas exclusivas no período promocional!</p>
+                <p className="text-red-500 font-bold text-xs md:text-sm mt-0.5">Ofertas exclusivas com preço de fábrica!</p>
               </div>
               <Link href="/categoria/todas" className="text-red-600 font-bold hover:underline text-xs md:text-sm hidden md:block">
                 Ver todas as ofertas &rarr;
@@ -189,18 +193,18 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 2. Mais Vendidos */}
+        {/* 7. MAIS VENDIDOS */}
         {produtosMaisVendidos.length > 0 && (
           <section className="py-8 px-6 bg-amber-50/60 rounded-3xl border border-amber-100 shadow-xs">
             <div className="flex justify-between items-end mb-6">
               <div>
                 <h2 className="text-2xl md:text-3xl font-heading font-black text-amber-900 uppercase tracking-tight flex items-center gap-2">
-                  ⭐ Os Mais Vendidos
+                  ⭐ Os Mais Vendidos para Pet Shop
                 </h2>
-                <p className="text-amber-700 font-bold text-xs md:text-sm mt-0.5">Os queridinhos dos nossos clientes pet shop!</p>
+                <p className="text-amber-700 font-bold text-xs md:text-sm mt-0.5">Os queridinhos dos profissionais de banho e tosa em todo o Brasil!</p>
               </div>
-              <Link href="/categoria/todas" className="text-amber-800 font-bold hover:underline text-xs md:text-sm hidden md:block">
-                Ver todos os mais vendidos &rarr;
+              <Link href="/busca?q=kit" className="text-amber-800 font-bold hover:underline text-xs md:text-sm hidden md:block">
+                Ver mais kits populares &rarr;
               </Link>
             </div>
             
@@ -214,16 +218,16 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 3. Nossas Novidades */}
+        {/* 8. NOVIDADES E LANÇAMENTOS */}
         <section className="py-6">
           <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary flex items-center gap-2">
-                🆕 Nossas Novidades
+                🆕 Lançamentos Recentes
               </h2>
-              <p className="text-gray-500 text-xs md:text-sm mt-0.5">Últimos lançamentos adicionados ao catálogo</p>
+              <p className="text-gray-500 text-xs md:text-sm mt-0.5">Novidades e modelos recém-saídos da linha de produção</p>
             </div>
-            <Link href="/categoria/todas" className="text-primary font-bold hover:underline text-xs md:text-sm hidden md:block">
+            <Link href="/busca?ordem=mais_recentes" className="text-primary font-bold hover:underline text-xs md:text-sm hidden md:block">
               Ver todos os lançamentos &rarr;
             </Link>
           </div>
@@ -237,14 +241,17 @@ export default async function Home() {
               ))
             ) : (
               <div className="col-span-full text-center text-gray-500 py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-                <p className="text-base font-bold mb-1">A vitrine está vazia!</p>
-                <p className="text-xs text-gray-400">Os produtos cadastrados no Painel Admin aparecerão aqui.</p>
+                <p className="text-base font-bold mb-1">Catálogo em atualização!</p>
+                <p className="text-xs text-gray-400">Novos produtos estão sendo carregados.</p>
               </div>
             )}
           </div>
         </section>
 
-        {/* DISTRIBUIDOR OFICIAL MIMOSHOW - SEÇÃO COMPACTA ABAIXO DE TODOS OS PRODUTOS */}
+        {/* 9. DISTRIBUIDORES E ATACADISTAS PARCEIROS (DEPOIS DOS PRODUTOS) */}
+        <QuemConfiaSection />
+
+        {/* 10. FABRICANTE OFICIAL MIMO SHOW - POSICIONAMENTO DA INDÚSTRIA */}
         <OfficialDistributorSection />
 
       </div>

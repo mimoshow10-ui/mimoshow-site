@@ -16,12 +16,10 @@ export function extrairQuantidade(nome: string, preco?: number): number {
   if (mKitCom) return parseInt(mKitCom[1], 10);
 
   // 3. Número seguido de unidade ou item pet:
-  // "10 und", "25 un", "40 unidades", "60 itens", "100 adesivos", "20 pares", "30 gravatas"
   const mUnid = clean.match(/\b(\d+)\s*(?:und|unid|unidades?|un\b|pcs|pc|peças?|pecas?|pares|par|itens|adesivos?|gravatas?|gravatinhas?|lacos?|laços?|gargantilhas?|bandanas?|cartelas?)/i);
   if (mUnid) return parseInt(mUnid[1], 10);
 
   // 4. Começa com número no início do título:
-  // "30 Gravatas...", "200 Adesivos...", "10 Máscaras...", "1 Cartela..."
   const mStart = clean.match(/^(\d+)\s+[a-zA-ZÀ-ÿ]/);
   if (mStart) return parseInt(mStart[1], 10);
 
@@ -29,8 +27,31 @@ export function extrairQuantidade(nome: string, preco?: number): number {
   const mCom = clean.match(/\bcom\s+(\d+)\b/i);
   if (mCom) return parseInt(mCom[1], 10);
 
-  // 6. Fallback ordenado por preço (normalmente maior quantidade = maior preço)
+  // 6. Fallback ordenado por preço
   return 100000 + (Number(preco) || 0);
+}
+
+/**
+ * Calcula o preço por unidade quando houver quantidade real no kit (ex: Kit com 50 por R$ 25,00 = R$ 0,50/un).
+ */
+export function calcularPrecoUnitario(
+  nome: string,
+  precoTotal: number
+): { quantidade: number; precoUnitario: number; textoFormatado: string } | null {
+  if (!nome || !precoTotal || precoTotal <= 0) return null;
+
+  const qtd = extrairQuantidade(nome);
+  // Se a quantidade for <= 1 ou for o fallback gigante (> 10000), não é kit com múltiplas unidades
+  if (qtd <= 1 || qtd >= 10000) return null;
+
+  const precoUnitario = precoTotal / qtd;
+  const textoFormatado = `R$ ${precoUnitario.toFixed(2).replace('.', ',')}`;
+
+  return {
+    quantidade: qtd,
+    precoUnitario,
+    textoFormatado,
+  };
 }
 
 /**

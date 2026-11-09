@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Clock, Truck, User, MapPin, PackageCheck, AlertCircle, Building2 } from 'lucide-react';
+import { notFound, redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { ArrowLeft, CheckCircle2, Clock, Truck, User, MapPin, PackageCheck, AlertCircle, Building2, RefreshCw, AlertTriangle } from 'lucide-react';
 
 import GerenciarPedidoControl from '../GerenciarPedidoControl';
 
@@ -46,7 +47,8 @@ export default async function DetalhePedidoPage({
 
   const isPago = pedido.status === 'PAGAMENTO_APROVADO' || pedido.status === 'ENVIADO' || pedido.status === 'ENTREGUE';
   const isBlingOk = pedido.bling_status === 'OK';
-  const isMelhorEnvioOk = pedido.melhor_envio_status === 'CADASTRADO';
+  const isBlingErro = pedido.bling_status === 'ERRO';
+  const isBlingFila = pedido.bling_status === 'FILA' || pedido.bling_status === 'PROCESSANDO';
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -83,7 +85,7 @@ export default async function DetalhePedidoPage({
                 <input type="hidden" name="numero" value={pedido.numero_pedido || pedido.id} />
                 <input type="hidden" name="id" value={pedido.id} />
                 <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs transition cursor-pointer">
-                  ✅ Marcar Pago & Enviar para Melhor Envio
+                  ✅ Marcar Pago & Sincronizar Bling
                 </button>
               </form>
             </div>
@@ -94,35 +96,113 @@ export default async function DetalhePedidoPage({
       {/* Painel Interativo de Gestao do Pedido (Status, Bling e Rastreio) */}
       <GerenciarPedidoControl pedido={pedido} />
 
-      {/* Card Sinal do Bling (Sincronização) */}
-      <div className={`p-5 rounded-2xl border flex items-center justify-between shadow-2xs ${
-        isBlingOk ? 'bg-blue-50/70 border-blue-200 text-blue-900' : 'bg-gray-50 border-gray-200 text-gray-700'
+      {/* Card Sinal do Bling (Sincronização Detalhada) */}
+      <div className={`p-5 rounded-2xl border space-y-3 shadow-2xs ${
+        isBlingOk
+          ? 'bg-blue-50/70 border-blue-200 text-blue-900'
+          : isBlingErro
+          ? 'bg-red-50/70 border-red-200 text-red-900'
+          : isBlingFila
+          ? 'bg-amber-50/70 border-amber-200 text-amber-900'
+          : 'bg-gray-50 border-gray-200 text-gray-700'
       }`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-            isBlingOk ? 'bg-blue-600' : 'bg-gray-400'
-          }`}>
-            {isBlingOk ? <PackageCheck size={22} /> : <AlertCircle size={22} />}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+              isBlingOk
+                ? 'bg-blue-600'
+                : isBlingErro
+                ? 'bg-red-600'
+                : isBlingFila
+                ? 'bg-amber-600'
+                : 'bg-gray-400'
+            }`}>
+              {isBlingOk ? (
+                <PackageCheck size={22} />
+              ) : isBlingErro ? (
+                <AlertCircle size={22} />
+              ) : isBlingFila ? (
+                <RefreshCw size={22} className="animate-spin" />
+              ) : (
+                <Clock size={22} />
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-base flex items-center gap-2">
+                Integração Bling ERP:
+                <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${
+                  isBlingOk
+                    ? 'bg-blue-600 text-white'
+                    : isBlingErro
+                    ? 'bg-red-600 text-white'
+                    : isBlingFila
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {isBlingOk
+                    ? 'CONFIRMADO NO BLING'
+                    : isBlingErro
+                    ? 'ERRO NA TRANSMISSÃO'
+                    : isBlingFila
+                    ? 'NA FILA DE PROCESSAMENTO'
+                    : 'AGUARDANDO PAGAMENTO'}
+                </span>
+              </h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {isBlingOk
+                  ? `O pedido foi gravado com sucesso no Bling ERP. ID no Bling: #${pedido.bling_id}`
+                  : isBlingErro
+                  ? `Falha ao transmitir ao Bling (${pedido.bling_tentativas || 1} tentativa(s) realizadas). Veja o diagnóstico abaixo.`
+                  : isBlingFila
+                  ? 'O pedido está aguardando transmissão automática pela fila resiliente.'
+                  : 'O Bling receberá este pedido automaticamente assim que o pagamento for aprovado.'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-base flex items-center gap-2">
-              Integração com o Bling:
-              <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${isBlingOk ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                {isBlingOk ? 'OK — RECEBIDO PELO BLING' : 'PENDENTE NO BLING'}
-              </span>
-            </h3>
-            <p className="text-xs text-gray-600 mt-0.5">
-              {isBlingOk
-                ? `O pedido foi transmitido com sucesso ao Bling ERP. Código de referência no Bling: #${pedido.bling_id || '18928371'}`
-                : 'O Bling receberá este pedido automaticamente assim que a confirmação de pagamento for concluída.'}
-            </p>
-          </div>
+
+          {isBlingOk && (
+            <span className="bg-white text-blue-800 font-bold text-xs px-3 py-1.5 rounded-xl border border-blue-200 shadow-2xs">
+              Sincronizado com Sucesso ✔️
+            </span>
+          )}
         </div>
 
-        {isBlingOk && (
-          <span className="bg-white text-blue-800 font-bold text-xs px-3 py-1.5 rounded-xl border border-blue-200 shadow-2xs">
-            Sincronizado ✔️
-          </span>
+        {/* Diagnóstico de Erro do Bling */}
+        {isBlingErro && pedido.bling_erro && (
+          <div className="bg-white/90 border border-red-300 rounded-xl p-3 text-xs text-red-950 space-y-1">
+            <p className="font-bold flex items-center gap-1.5 text-red-800">
+              <AlertTriangle size={14} /> Detalhe do Erro retornado pela API do Bling:
+            </p>
+            <p className="font-mono bg-red-50 p-2 rounded text-[11px] break-words">
+              {pedido.bling_erro}
+            </p>
+            {pedido.bling_proxima_tentativa && (
+              <p className="text-gray-600 text-[11px] pt-1">
+                ⏳ Próxima tentativa automática agendada para: <strong>{new Date(pedido.bling_proxima_tentativa).toLocaleTimeString('pt-BR')}</strong>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Histórico de Tentativas */}
+        {Array.isArray(pedido.bling_historico) && pedido.bling_historico.length > 0 && (
+          <details className="text-xs text-gray-700 bg-white/70 border border-gray-200 rounded-xl p-3 cursor-pointer">
+            <summary className="font-bold text-gray-800 hover:text-blue-700 select-none">
+              📋 Ver histórico de sincronizações ({pedido.bling_historico.length} evento(s))
+            </summary>
+            <ul className="mt-2 space-y-1 divide-y divide-gray-100 font-mono text-[11px]">
+              {pedido.bling_historico.map((h: any, idx: number) => (
+                <li key={idx} className="pt-1 flex items-start gap-2">
+                  <span className="text-gray-400 whitespace-nowrap">
+                    {new Date(h.data).toLocaleString('pt-BR')}:
+                  </span>
+                  <span className={h.tipo === 'sucesso' ? 'text-green-700 font-bold' : 'text-red-700'}>
+                    [{h.tipo?.toUpperCase()}] {h.mensagem}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
 

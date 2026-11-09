@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import TopBarForm from './TopBarForm';
 import BannersForm from './BannersForm';
+import EncontreRapidoForm from './EncontreRapidoForm';
 import PopupForm from './PopupForm';
 import EmailMarketingConfig from './EmailMarketingConfig';
 import { salvarEmailMarketingConfig, dispararEmailTeste } from './actions';
@@ -58,6 +59,10 @@ export default async function AdminMarketing({
   };
 
   const emailLogs = configs?.find(c => c.chave === 'emails_enviados_log')?.valor || [];
+
+  const encontreRapidoConfig = configs?.find(c => c.chave === 'encontre_rapido_segmentos')?.valor || [];
+  const { data: categoriasData } = await supabase.from('categorias').select('nome, slug').order('nome');
+  const categoriasDisponiveis = (categoriasData || []).map((c: any) => ({ nome: c.nome, slug: c.slug }));
 
   return (
     <div className="max-w-5xl space-y-8 font-sans">
@@ -129,6 +134,12 @@ export default async function AdminMarketing({
 
         {/* ── BANNERS DO CARROSSEL ── */}
         <BannersForm bannersIniciais={bannerItems} />
+
+        {/* ── ENCONTRE RÁPIDO (ATALHOS DE SEGMENTOS NA HOME) ── */}
+        <EncontreRapidoForm 
+          segmentosIniciais={encontreRapidoConfig} 
+          categoriasDisponiveis={categoriasDisponiveis} 
+        />
 
         {/* ── POP-UP PROMOCIONAL MODAL ── */}
         <PopupForm popup={popup} />

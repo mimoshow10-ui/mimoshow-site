@@ -1,4 +1,4 @@
-import { ShoppingCart, User, Heart } from 'lucide-react';
+import { ShoppingCart, User, Heart, Factory } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -27,20 +27,39 @@ export default async function Header() {
           {/* Logo do Site (Compacto no mobile, grande no desktop) */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/">
-              <div className="relative w-36 sm:w-48 md:w-[280px] h-11 sm:h-14 md:h-16 cursor-pointer overflow-visible flex items-center">
+              <div className="relative w-36 sm:w-48 md:w-[220px] lg:w-[260px] h-11 sm:h-14 md:h-16 cursor-pointer overflow-visible flex items-center">
                 <Image 
                   src="/logo-mimoshow.png" 
                   alt="MimoShow Logo" 
                   fill 
-                  className="object-contain object-left scale-[1.1] md:scale-[1.2] origin-left" 
+                  className="object-contain object-left scale-[1.05] md:scale-[1.15] origin-left" 
                   priority 
                 />
               </div>
             </Link>
           </div>
 
+          {/* Botão Conheça Nossa Fábrica (Desktop e Tablet - no espaço ao lado da barra de busca) */}
+          <Link
+            href="/conheca-a-mimoshow"
+            className="hidden md:flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100/70 hover:from-orange-100 hover:to-amber-100 border border-orange-200/90 text-orange-950 transition-all duration-200 shadow-2xs hover:shadow-xs group flex-shrink-0 cursor-pointer"
+            title="Conheça a fábrica Mimo Show — Fabricação própria de acessórios pet"
+          >
+            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-primary group-hover:text-white transition-all">
+              <Factory size={15} />
+            </div>
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-[12px] font-black text-secondary tracking-tight group-hover:text-primary transition-colors">
+                Conheça nossa fábrica
+              </span>
+              <span className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+                Clique aqui <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">&rarr;</span>
+              </span>
+            </div>
+          </Link>
+
           {/* Barra de Pesquisa (Desktop) */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-4 lg:mx-6">
+          <div className="hidden md:flex flex-1 max-w-lg mx-2 lg:mx-4">
             <SearchBar />
           </div>
 
@@ -65,8 +84,16 @@ export default async function Header() {
         </div>
 
         {/* Barra de Pesquisa Mobile (Segunda linha dedicada no celular) */}
-        <div className="block md:hidden pb-2 pt-0.5">
+        <div className="block md:hidden pb-2 pt-0.5 space-y-1.5">
           <SearchBar />
+          <Link
+            href="/conheca-a-mimoshow"
+            className="flex items-center justify-center gap-1.5 py-1 px-2.5 text-[11px] font-bold text-orange-900 bg-orange-50/90 border border-orange-200/70 rounded-lg hover:bg-orange-100 transition shadow-2xs"
+          >
+            <Factory size={13} className="text-primary" />
+            <span>Conheça nossa fábrica —</span>
+            <span className="text-primary underline font-extrabold">Clique aqui &rarr;</span>
+          </Link>
         </div>
       </div>
 
