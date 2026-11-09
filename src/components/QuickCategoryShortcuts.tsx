@@ -29,7 +29,6 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     subtitulo: 'Piercings e EVA Glitter',
     link_url: '/categoria/adesivos',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/16597512806/produto_16597512806_10_1788997374469.jpg',
-    tag: 'Top Vendas',
     ativo: true,
   },
   {
@@ -70,7 +69,6 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     subtitulo: 'Novidades da Semana',
     link_url: '/busca?ordem=mais_recentes',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/produtos/ms4599/ms4599_1788902180741_11.jpg',
-    tag: 'Novo',
     ativo: true,
   },
   {
@@ -79,7 +77,6 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     subtitulo: 'Maior Lucro por Unidade',
     link_url: '/busca?q=kit',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15310663798/produto_15310663798_0_1789148623091.jpg',
-    tag: 'Econômico',
     ativo: true,
   },
 ];
@@ -120,9 +117,6 @@ export default async function QuickCategoryShortcuts() {
       {/* Cabeçalho da Seção */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-black uppercase text-primary tracking-wider block">
-            Navegação Rápida
-          </span>
           <h2 className="text-xl sm:text-2xl font-heading font-black text-secondary flex items-center gap-2">
             <span>Encontre por Categoria</span>
           </h2>
@@ -144,28 +138,21 @@ export default async function QuickCategoryShortcuts() {
             <Link
               key={item.id || index}
               href={item.link_url || '/busca'}
-              className="flex-shrink-0 w-36 sm:w-auto snap-start p-3 rounded-2xl border border-gray-200/90 bg-white hover:bg-orange-50/40 hover:border-primary/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col items-center text-center justify-between group relative shadow-2xs"
+              className="flex-shrink-0 w-36 sm:w-auto snap-start p-3 rounded-2xl border border-gray-200/90 bg-white hover:bg-orange-50/40 hover:border-orange-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col items-center text-center justify-between group relative shadow-2xs"
             >
-              {/* Badge/Tag de Destaque */}
-              {item.tag && item.tag.trim() && (
-                <span className="absolute -top-2 bg-primary text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs z-10">
-                  {item.tag}
-                </span>
-              )}
-
-              {/* Foto do Segmento ou Ícone Fallback */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gray-50 border border-gray-100 shadow-2xs flex items-center justify-center overflow-hidden relative mb-2 mt-1 group-hover:scale-105 transition-transform duration-200">
+              {/* Foto do Segmento com tamanho ampliado */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gray-50 border border-gray-100 shadow-2xs flex items-center justify-center overflow-hidden relative mb-2.5 mt-1 group-hover:scale-105 transition-transform duration-200">
                 {item.imagem_url ? (
                   <Image
                     src={item.imagem_url}
                     alt={item.nome}
                     fill
                     className="object-cover"
-                    sizes="64px"
+                    sizes="(max-width: 640px) 96px, 112px"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-secondary group-hover:text-primary transition-colors">
-                    <FallbackIcon size={24} />
+                    <FallbackIcon size={32} />
                   </div>
                 )}
               </div>

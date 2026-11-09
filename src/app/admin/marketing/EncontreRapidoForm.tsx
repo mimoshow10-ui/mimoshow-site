@@ -41,7 +41,7 @@ const SEGMENTOS_DEFAULT: SegmentoData[] = [
     subtitulo: 'Piercings e EVA Glitter',
     link_url: '/categoria/adesivos',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/16597512806/produto_16597512806_10_1788997374469.jpg',
-    tag: 'Top Vendas',
+    tag: '',
     ativo: true,
   },
   {
@@ -86,7 +86,7 @@ const SEGMENTOS_DEFAULT: SegmentoData[] = [
     subtitulo: 'Novidades da Semana',
     link_url: '/busca?ordem=mais_recentes',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/produtos/ms4599/ms4599_1788902180741_11.jpg',
-    tag: 'Novo',
+    tag: '',
     ativo: true,
   },
   {
@@ -95,7 +95,7 @@ const SEGMENTOS_DEFAULT: SegmentoData[] = [
     subtitulo: 'Maior Lucro por Unidade',
     link_url: '/busca?q=kit',
     imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15310663798/produto_15310663798_0_1789148623091.jpg',
-    tag: 'Econômico',
+    tag: '',
     ativo: true,
   },
 ];
