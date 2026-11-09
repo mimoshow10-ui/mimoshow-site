@@ -28,6 +28,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Adesivos Pet',
     subtitulo: 'Piercings e EVA Glitter',
     link_url: '/categoria/adesivos',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/16597512806/produto_16597512806_10_1788997374469.jpg',
     tag: 'Top Vendas',
     ativo: true,
   },
@@ -36,6 +37,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Gravatinhas',
     subtitulo: 'P, M, G em Cetim',
     link_url: '/categoria/gravatinhas',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15982227440/produto_15982227440_0_1789139376067.jpg',
     ativo: true,
   },
   {
@@ -43,6 +45,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Lacinhos',
     subtitulo: 'Apliques e Borrachinhas',
     link_url: '/categoria/lacinhos',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15951711280/produto_15951711280_0_1789157429390.jpg',
     ativo: true,
   },
   {
@@ -50,6 +53,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Colarinhos',
     subtitulo: 'Elegância para Banho & Tosa',
     link_url: '/busca?q=colarinho',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/produtos/ms4065/ms4065_1788895887748_1.jpg',
     ativo: true,
   },
   {
@@ -57,6 +61,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Bandanas',
     subtitulo: 'Estampas e Acabamento',
     link_url: '/categoria/bandanas',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/produtos/MS3375BD-20P/MS3375BD-20P_1788896120253_1.jpg',
     ativo: true,
   },
   {
@@ -64,6 +69,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Lançamentos',
     subtitulo: 'Novidades da Semana',
     link_url: '/busca?ordem=mais_recentes',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/produtos/ms4599/ms4599_1788902180741_11.jpg',
     tag: 'Novo',
     ativo: true,
   },
@@ -72,6 +78,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Kits Econômicos',
     subtitulo: 'Maior Lucro por Unidade',
     link_url: '/busca?q=kit',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15310663798/produto_15310663798_0_1789148623091.jpg',
     tag: 'Econômico',
     ativo: true,
   },
