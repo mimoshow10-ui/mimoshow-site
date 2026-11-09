@@ -96,7 +96,7 @@ export default function ConhecaMimoShowPage() {
           {/* Destaque para os 3 Distribuidores Oficiais */}
           <div className="pt-2">
             <p className="text-xs font-black uppercase text-amber-900 tracking-wider mb-3">
-              Distribuidores Oficiais Autorizados:
+              Distribuidores Autorizados:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Komatsu Pet */}

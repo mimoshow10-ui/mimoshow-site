@@ -77,7 +77,7 @@ export default async function QuemConfiaSection() {
             <Award size={14} /> Quem confia na Mimo Show
           </span>
           <h2 className="text-2xl sm:text-3xl font-heading font-black text-secondary">
-            Distribuidores & Atacadistas Oficiais
+            Distribuidores Autorizados
           </h2>
         </div>
         <p className="text-xs text-gray-500 max-w-md sm:text-right">
@@ -119,7 +119,7 @@ export default async function QuemConfiaSection() {
                   </div>
 
                   <span className="bg-emerald-50 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1 flex-shrink-0 shadow-2xs">
-                    <ShieldCheck size={12} className="text-emerald-600" /> Autorizado
+                    <ShieldCheck size={12} className="text-emerald-600" /> Distribuidor Autorizado
                   </span>
                 </div>
 
