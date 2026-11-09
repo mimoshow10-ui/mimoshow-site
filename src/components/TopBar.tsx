@@ -12,28 +12,53 @@ export default function TopBar({ topbar }: { topbar: any }) {
     return null;
   }
 
-  const frase1 = topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00 para SP';
-  const frase2 = topbar.texto2 || '';
+  const frasePrincipal = (topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00 para SP').trim();
+  const fraseSecundaria = topbar.texto2 && topbar.texto2.trim() !== frasePrincipal ? topbar.texto2.trim() : null;
+
+  // Frases que serão repetidas com espaçamento uniforme
+  const frasesBase = fraseSecundaria
+    ? [frasePrincipal, fraseSecundaria, frasePrincipal, fraseSecundaria]
+    : [frasePrincipal, frasePrincipal, frasePrincipal, frasePrincipal];
+
+  // Duplicação exata para efeito de looping infinito contínuo da direita para a esquerda (0 a -50%)
+  const frasesLoop = [...frasesBase, ...frasesBase];
 
   const defaultBg = 'bg-gradient-to-r from-pink-500 via-orange-500 to-amber-500';
   const bgClass = topbar.cor && topbar.cor !== 'bg-primary' ? topbar.cor : defaultBg;
 
   return (
-    <div className={`w-full ${bgClass} text-white py-2 px-4 shadow-xs`}>
-      <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-0.5 text-center font-sans">
-        {/* Linha 1 */}
-        <span className="text-xs sm:text-sm font-black tracking-wide leading-tight drop-shadow-xs flex items-center justify-center gap-1.5">
-          <span>✨</span>
-          <span>{frase1}</span>
-          <span>✨</span>
-        </span>
+    <div className={`w-full ${bgClass} text-white py-1.5 sm:py-2 overflow-hidden shadow-xs relative select-none z-30`}>
+      <style>{`
+        @keyframes topbarMarquee {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-topbar-marquee {
+          display: flex;
+          width: max-content;
+          animation: topbarMarquee 28s linear infinite;
+          will-change: transform;
+        }
+        .animate-topbar-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-        {/* Linha 2 (Abaixo da Linha 1, se preenchida) */}
-        {frase2 && frase2.trim() && (
-          <span className="text-[11px] sm:text-xs font-bold text-white/95 tracking-wide leading-tight border-t border-white/20 pt-1 mt-0.5 w-full max-w-xl">
-            {frase2}
-          </span>
-        )}
+      {/* Letreiro Dinâmico da Direita para a Esquerda em Linha Única */}
+      <div className="flex items-center overflow-hidden">
+        <div className="animate-topbar-marquee flex items-center">
+          {frasesLoop.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2.5 mx-6 sm:mx-10 flex-shrink-0 text-xs sm:text-sm font-black tracking-wide drop-shadow-xs"
+            >
+              <span className="text-amber-200">✨</span>
+              <span>{item}</span>
+              <span className="text-amber-200">✨</span>
+              <span className="text-white/40 ml-4 sm:ml-6 font-normal">•</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

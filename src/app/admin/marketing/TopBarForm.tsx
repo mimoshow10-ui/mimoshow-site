@@ -57,19 +57,22 @@ export default function TopBarForm({ topbar }: Props) {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Frase 1 da Barra *</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Frase Principal do Letreiro Dinâmico *</label>
           <input
             type="text"
             name="texto1"
-            defaultValue={topbar.texto1 || topbar.texto || 'Frete grátis acima de R$ 99,00'}
-            placeholder="Ex: 🚚 Frete grátis acima de R$ 99,00"
+            defaultValue={topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00 para SP'}
+            placeholder="Ex: 🚚 Frete grátis acima de R$ 99,00 para SP"
             className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none font-bold"
             required
           />
+          <p className="text-[11px] text-gray-500 mt-1">
+            Esta frase rola continuamente da direita para a esquerda em looping infinito.
+          </p>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Frase 2 da Barra (Opcional)</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Segunda Frase Alternada (Opcional)</label>
           <input
             type="text"
             name="texto2"
@@ -77,6 +80,9 @@ export default function TopBarForm({ topbar }: Props) {
             placeholder="Ex: 💳 Parcele em até 6x sem juros no cartão"
             className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none font-bold"
           />
+          <p className="text-[11px] text-gray-500 mt-1">
+            Se preenchida, alterna com a frase principal na mesma linha rolante. Deixe em branco se quiser apenas a primeira frase.
+          </p>
         </div>
 
         <div>
