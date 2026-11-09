@@ -152,21 +152,43 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4 md:py-10 space-y-10">
 
-      {/* ── Bloco principal: Foto | Info ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
+      {/* ── Bloco principal: Foto e Descrição | Info e Compra ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-start">
 
-        {/* COLUNA ESQUERDA — Galeria de fotos e vídeo */}
-        <SafeComponent>
-          <ProductMediaGallery
-            imagens={produto.imagens || []}
-            videoUrl={produto.video_url}
-            nome={produto.nome || 'Produto'}
-            sku={produto.codigo_barras || produto.sku}
-          />
-        </SafeComponent>
+        {/* COLUNA ESQUERDA — Galeria de fotos e vídeo + Descrição do Produto */}
+        <div className="flex flex-col gap-6">
+          <SafeComponent>
+            <ProductMediaGallery
+              imagens={produto.imagens || []}
+              videoUrl={produto.video_url}
+              nome={produto.nome || 'Produto'}
+              sku={produto.codigo_barras || produto.sku}
+            />
+          </SafeComponent>
+
+          {/* ── Descrição do Produto (começa abaixo da foto) ── */}
+          <div className="bg-white p-5 sm:p-7 rounded-3xl border border-gray-200/90 shadow-xs space-y-4">
+            {/* Frase solicitada pelo cliente: Aqui você compra direto da fábrica. */}
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white font-black text-base sm:text-lg px-4 py-3 rounded-2xl flex items-center gap-3 shadow-xs">
+              <Factory className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 text-white" />
+              <span className="tracking-tight">Aqui você compra direto da fábrica.</span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-heading font-black text-secondary pt-1">
+              Especificações & Descrição do Produto
+            </h2>
+
+            <div
+              className="text-gray-700 leading-relaxed text-sm prose prose-sm max-w-none break-words"
+              dangerouslySetInnerHTML={{
+                __html: String(produto.descricao_curta || produto.descricao || "Produto oficial Mimo Show com garantia de qualidade, produção própria e pronta entrega para banho e tosa.").replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, "$1<br />$2")
+              }}
+            />
+          </div>
+        </div>
 
         {/* COLUNA DIREITA — Nome, preço, economia unitária, variações, botões, frete */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:sticky md:top-24 md:self-start">
 
           {/* Selo de Fabricação Própria */}
           <div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-900 border border-orange-200 text-[11px] font-black uppercase px-2.5 py-1 rounded-full w-fit">
@@ -271,19 +293,6 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           )}
         </div>
       </div>
-
-      {/* ── Descrição completa abaixo ── */}
-      {(produto.descricao_curta || produto.descricao) && (
-        <div className="border-t border-border pt-8 bg-white p-6 sm:p-8 rounded-3xl shadow-xs">
-          <h2 className="text-xl sm:text-2xl font-heading font-black text-secondary mb-4">
-            Especificações & Descrição do Produto
-          </h2>
-          <div
-            className="text-gray-700 leading-relaxed text-sm prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: String(produto.descricao_curta || produto.descricao || "").replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, "$1<br />$2") }}
-          />
-        </div>
-      )}
 
       {/* ── SEÇÃO: PRODUTOS COMPLEMENTARES (COMPRE JUNTO) ── */}
       {complementares.length > 0 && (
