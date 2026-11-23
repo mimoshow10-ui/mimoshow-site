@@ -23,11 +23,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { getAnalyticsConfig } from "@/lib/analytics/config";
+import AnalyticsScripts from "@/components/analytics/AnalyticsScripts";
+import CustomerJourneyTracker from "@/components/analytics/CustomerJourneyTracker";
+import CookieConsentBanner from "@/components/analytics/CookieConsentBanner";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const analyticsConfig = await getAnalyticsConfig();
+
   return (
     <html lang="pt-BR" suppressHydrationWarning className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
       <head>
@@ -36,7 +43,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-icon.png?v=3" />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-text overflow-x-hidden w-full max-w-[100vw]">
+        <AnalyticsScripts config={analyticsConfig} />
+        <CustomerJourneyTracker />
         {children}
+        <CookieConsentBanner />
       </body>
     </html>
   );

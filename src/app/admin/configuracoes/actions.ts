@@ -162,3 +162,37 @@ export async function salvarFreteConfig(formData: FormData) {
   }
 }
 
+export async function salvarAnalyticsConfig(formData: FormData) {
+  try {
+    const gtm_id = (formData.get('gtm_id') as string || '').trim();
+    const ga4_measurement_id = (formData.get('ga4_measurement_id') as string || '').trim();
+    const clarity_project_id = (formData.get('clarity_project_id') as string || '').trim();
+    const ativo = formData.get('ativo') === 'on';
+    const debug_mode = formData.get('debug_mode') === 'on';
+
+    const { error } = await supabase.from('configuracoes').upsert({
+      chave: 'analytics_config',
+      valor: {
+        gtm_id,
+        ga4_measurement_id,
+        clarity_project_id,
+        ativo,
+        debug_mode,
+        consent_padrao: 'denied',
+        atualizado_em: new Date().toISOString()
+      }
+    }, { onConflict: 'chave' });
+
+    if (error) {
+      return { sucesso: false, erro: `Erro ao salvar configurações de Analytics: ${error.message}` };
+    }
+
+    revalidatePath('/admin/configuracoes');
+    revalidatePath('/admin/analytics');
+    revalidatePath('/');
+    return { sucesso: true, mensagem: 'Configurações de Analytics (GTM, GA4, Clarity) salvas com sucesso!' };
+  } catch (err: any) {
+    return { sucesso: false, erro: err.message || 'Erro ao salvar configurações de Analytics.' };
+  }
+}
+

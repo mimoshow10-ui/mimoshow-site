@@ -77,6 +77,11 @@ export default async function AdminLayout({
             <span>Encontre Rápido (Home)</span>
           </Link>
 
+          <Link href="/admin/analytics" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <span className="text-cyan-400 text-sm">📊</span>
+            <span>Jornada & Analytics</span>
+          </Link>
+
           <Link href="/admin/configuracoes" className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
             <Settings size={18} className="text-blue-300" />
             <span>Configurações</span>

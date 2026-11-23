@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { RefreshCw, Home, ShoppingBag } from 'lucide-react';
+import { trackError } from '@/lib/analytics/events';
 
 export default function GlobalStoreError({
   error,
@@ -13,6 +14,7 @@ export default function GlobalStoreError({
 }) {
   useEffect(() => {
     console.error('Erro de renderização na loja:', error);
+    trackError('navegacao', error?.message || 'Erro de renderização na loja', { digest: error?.digest });
   }, [error]);
 
   return (

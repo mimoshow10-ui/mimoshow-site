@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { salvarSenhaAdmin, salvarResendConfig, salvarCredenciais, salvarMercadoPago, salvarFreteConfig } from './actions';
-import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { salvarSenhaAdmin, salvarResendConfig, salvarCredenciais, salvarMercadoPago, salvarFreteConfig, salvarAnalyticsConfig } from './actions';
+import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, ShieldCheck, BarChart3 } from 'lucide-react';
 
 interface Props {
   temSenhaConfigurada: boolean;
@@ -16,9 +17,16 @@ interface Props {
     usar_transportadoras?: boolean;
     usar_retirada?: boolean;
   } | null;
+  analyticsConfig: {
+    gtm_id?: string;
+    ga4_measurement_id?: string;
+    clarity_project_id?: string;
+    ativo?: boolean;
+    debug_mode?: boolean;
+  } | null;
 }
 
-export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, creds, mpCreds, freteConfig }: Props) {
+export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, creds, mpCreds, freteConfig, analyticsConfig }: Props) {
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [mostrarResendKey, setMostrarResendKey] = useState(false);
@@ -28,12 +36,14 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
   const [msgCreds, setMsgCreds] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgMp, setMsgMp] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgFrete, setMsgFrete] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [msgAnalytics, setMsgAnalytics] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
   const [loadingSenha, setLoadingSenha] = useState(false);
   const [loadingResend, setLoadingResend] = useState(false);
   const [loadingCreds, setLoadingCreds] = useState(false);
   const [loadingMp, setLoadingMp] = useState(false);
   const [loadingFrete, setLoadingFrete] = useState(false);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   async function handleSalvarSenha(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -129,6 +139,25 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
       setMsgFrete({ tipo: 'erro', texto: err.message || 'Erro de comunicação.' });
     } finally {
       setLoadingFrete(false);
+    }
+  }
+
+  async function handleSalvarAnalytics(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoadingAnalytics(true);
+    setMsgAnalytics(null);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await salvarAnalyticsConfig(formData);
+      if (res?.sucesso) {
+        setMsgAnalytics({ tipo: 'sucesso', texto: res.mensagem || 'Configurações de Analytics salvas!' });
+      } else {
+        setMsgAnalytics({ tipo: 'erro', texto: res?.erro || 'Erro ao salvar configurações de Analytics.' });
+      }
+    } catch (err: any) {
+      setMsgAnalytics({ tipo: 'erro', texto: err.message || 'Erro de comunicação.' });
+    } finally {
+      setLoadingAnalytics(false);
     }
   }
 
@@ -536,6 +565,125 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
           >
             {loadingFrete ? <RefreshCw size={14} className="animate-spin" /> : null}
             <span>{loadingFrete ? 'Salvando...' : '💾 Salvar Configurações de Frete'}</span>
+          </button>
+        </form>
+      </div>
+
+      {/* 📊 JORNADA DO CLIENTE & ANALYTICS (GTM, GA4, CLARITY & LGPD) */}
+      <div className="bg-white rounded-xl shadow-sm border border-blue-300 p-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
+            <BarChart3 className="text-blue-600" size={24} />
+            Monitoramento da Jornada (GTM, GA4 & Clarity)
+          </h2>
+          <Link
+            href="/admin/analytics"
+            className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 w-fit"
+          >
+            <span>Auditoria & Validador de Eventos →</span>
+          </Link>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Gerencie a integração centralizada com <strong>Google Tag Manager</strong>, <strong>Google Analytics 4</strong> e <strong>Microsoft Clarity</strong>. O sistema opera em conformidade estrita com a <strong>LGPD</strong>, bloqueando rastreamento de anúncios até consentimento do usuário e mascarando dados sensíveis.
+        </p>
+
+        {msgAnalytics && (
+          <div
+            className={`p-3 rounded-xl mb-4 font-bold text-xs border flex items-center gap-2 ${
+              msgAnalytics.tipo === 'sucesso'
+                ? 'bg-green-100 text-green-800 border-green-300'
+                : 'bg-red-100 text-red-800 border-red-300'
+            }`}
+          >
+            {msgAnalytics.tipo === 'sucesso' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{msgAnalytics.texto}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSalvarAnalytics} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2 border-b border-gray-100">
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-secondary bg-gray-50 p-3 rounded-xl border border-gray-200">
+              <input
+                type="checkbox"
+                name="ativo"
+                defaultChecked={analyticsConfig?.ativo !== false}
+                className="accent-blue-600 w-4 h-4 rounded"
+              />
+              <div>
+                <p className="font-bold text-gray-800">Monitoramento Ativo</p>
+                <p className="text-[11px] text-gray-500 font-normal">Habilita a injeção do Data Layer, GTM, GA4 e Clarity na loja.</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-secondary bg-gray-50 p-3 rounded-xl border border-gray-200">
+              <input
+                type="checkbox"
+                name="debug_mode"
+                defaultChecked={Boolean(analyticsConfig?.debug_mode)}
+                className="accent-blue-600 w-4 h-4 rounded"
+              />
+              <div>
+                <p className="font-bold text-gray-800">Modo Debug no Console</p>
+                <p className="text-[11px] text-gray-500 font-normal">Exibe cada evento e payload sanitizado no console do navegador.</p>
+              </div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Google Tag Manager (GTM ID)
+              </label>
+              <input
+                type="text"
+                name="gtm_id"
+                autoComplete="off"
+                defaultValue={analyticsConfig?.gtm_id || ''}
+                placeholder="Ex: GTM-XXXXXXX"
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Ex: GTM-ABC1234</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Google Analytics 4 (GA4 Measurement ID)
+              </label>
+              <input
+                type="text"
+                name="ga4_measurement_id"
+                autoComplete="off"
+                defaultValue={analyticsConfig?.ga4_measurement_id || ''}
+                placeholder="Ex: G-XXXXXXXXXX"
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Ex: G-XXXXXXXXXX</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Microsoft Clarity (Project ID)
+              </label>
+              <input
+                type="text"
+                name="clarity_project_id"
+                autoComplete="off"
+                defaultValue={analyticsConfig?.clarity_project_id || ''}
+                placeholder="Ex: abcdefgh12"
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Código do projeto Clarity</span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loadingAnalytics}
+            className="bg-[#0B2545] text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-900 transition w-fit mt-2 cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-2 text-xs"
+          >
+            {loadingAnalytics ? <RefreshCw size={14} className="animate-spin" /> : null}
+            <span>{loadingAnalytics ? 'Salvando...' : '💾 Salvar Configurações de Analytics'}</span>
           </button>
         </form>
       </div>

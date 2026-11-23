@@ -41,6 +41,12 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     freteConfig = cfgFrete?.valor;
   } catch {}
 
+  let analyticsConfig = null;
+  try {
+    const { data: cfgAnalytics } = await supabase.from('configuracoes').select('*').eq('chave', 'analytics_config').maybeSingle();
+    analyticsConfig = cfgAnalytics?.valor || null;
+  } catch {}
+
   return (
     <div className="max-w-3xl font-sans space-y-6">
       <h1 className="text-3xl font-heading font-bold text-gray-800 border-b border-gray-200 pb-4">
@@ -71,6 +77,7 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
         creds={creds}
         mpCreds={mpCreds}
         freteConfig={freteConfig}
+        analyticsConfig={analyticsConfig}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, Zap, Check } from 'lucide-react';
 import { ItemCarrinho } from '@/lib/types/checkout';
+import { trackAddToCart } from '@/lib/analytics/events';
 
 interface Props {
   produto: {
@@ -67,6 +68,9 @@ export default function AddToCartButtons({ produto }: Props) {
       }
 
       localStorage.setItem('carrinho', JSON.stringify(itens));
+
+      // Disparar evento para o Data Layer (GA4 / GTM / Clarity)
+      trackAddToCart(novoItem, 1);
 
       // Notificar o Header para atualizar o contador (badge)
       window.dispatchEvent(new Event('cart-updated'));

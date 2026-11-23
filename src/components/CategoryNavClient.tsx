@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { trackSelectCategory } from '@/lib/analytics/events';
 
 interface Categoria {
   id: string;
@@ -129,6 +130,11 @@ export default function CategoryNavClient({ pais, all }: Props) {
     return `/categoria/${slug}`;
   };
 
+  const handleCategoryClick = (nome: string, slugOrUrl: string) => {
+    trackSelectCategory(nome, slugOrUrl);
+    setActiveDropdown(null);
+  };
+
   return (
     <nav className="w-full bg-white border-t border-gray-100 shadow-2xs relative z-40" ref={navRef}>
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5">
@@ -151,7 +157,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                 <div className="flex items-center">
                   <Link
                     href={`/categoria/${cat.slug}`}
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={() => handleCategoryClick(cat.nome, `/categoria/${cat.slug}`)}
                     className="flex items-center gap-1.5 bg-white border border-gray-200 text-slate-800 hover:border-pink-400 hover:text-pink-600 rounded-full px-3 py-1.5 text-xs md:text-[13px] font-bold transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
                   >
                     {emoji && <span className="text-xs">{emoji}</span>}
@@ -187,7 +193,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                           <Link
                             key={sub.id}
                             href={`/categoria/${sub.slug}`}
-                            onClick={() => setActiveDropdown(null)}
+                            onClick={() => handleCategoryClick(sub.nome, `/categoria/${sub.slug}`)}
                             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition rounded-lg mx-1"
                           >
                             <span>{sub.nome}</span>
@@ -244,7 +250,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                           <Link
                             key={tCat.id}
                             href={`/categoria/${tCat.slug}`}
-                            onClick={() => setActiveDropdown(null)}
+                            onClick={() => handleCategoryClick(tCat.nome, `/categoria/${tCat.slug}`)}
                             className="flex items-center justify-between px-4 py-2 text-xs font-bold text-gray-800 hover:bg-amber-50 hover:text-amber-900 transition rounded-lg mx-1"
                           >
                             <div className="flex items-center gap-2">
@@ -274,7 +280,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
           >
             <Link
               href="/categoria/infantil"
-              onClick={() => setActiveDropdown(null)}
+              onClick={() => handleCategoryClick('Infantil', '/categoria/infantil')}
               className="flex items-center gap-1.5 bg-pink-50 text-pink-900 border border-pink-300 hover:bg-pink-100 hover:border-pink-400 font-extrabold rounded-full px-3.5 py-1.5 text-xs md:text-[13px] transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
             >
               <span className="text-xs">🎈</span>
@@ -301,7 +307,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                       <Link
                         key={item.slug}
                         href={getCategoryLink(item.slug)}
-                        onClick={() => setActiveDropdown(null)}
+                        onClick={() => handleCategoryClick(item.nome, getCategoryLink(item.slug))}
                         className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-pink-50 hover:text-pink-700 transition rounded-lg mx-1"
                       >
                         <span className="text-sm">{item.emoji}</span>
@@ -322,7 +328,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
           >
             <Link
               href="/categoria/decoracao"
-              onClick={() => setActiveDropdown(null)}
+              onClick={() => handleCategoryClick('Decoração', '/categoria/decoracao')}
               className="flex items-center gap-1.5 bg-sky-50 text-sky-900 border border-sky-300 hover:bg-sky-100 hover:border-sky-400 font-extrabold rounded-full px-3.5 py-1.5 text-xs md:text-[13px] transition shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
             >
               <span className="text-xs">✨</span>
@@ -349,7 +355,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
                       <Link
                         key={item.slug}
                         href={getCategoryLink(item.slug)}
-                        onClick={() => setActiveDropdown(null)}
+                        onClick={() => handleCategoryClick(item.nome, getCategoryLink(item.slug))}
                         className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-sky-50 hover:text-sky-700 transition rounded-lg mx-1"
                       >
                         <span className="text-sm">{item.emoji}</span>
@@ -365,6 +371,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
           {/* Botão Ver Tudo */}
           <Link
             href="/categoria/todas"
+            onClick={() => handleCategoryClick('Ver Tudo', '/categoria/todas')}
             className="flex-shrink-0 flex items-center gap-1.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-extrabold rounded-full px-4 py-1.5 text-xs md:text-[13px] hover:from-pink-600 hover:to-rose-600 transition shadow-2xs active:scale-95 whitespace-nowrap"
           >
             <span>Ver Tudo</span>

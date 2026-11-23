@@ -8,6 +8,7 @@ import { Search, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { hasValidPhoto } from '@/lib/productFilter';
 import { extractImageUrls, getOptimizedImageUrl } from '@/lib/imageExtractor';
+import { trackSearch } from '@/lib/analytics/events';
 
 interface ProdutoBusca {
   id: string;
@@ -72,6 +73,7 @@ export default function SearchBar() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
+    trackSearch(query.trim(), resultados.length);
     setOpen(false);
     router.push(`/busca?q=${encodeURIComponent(query.trim())}`);
   }

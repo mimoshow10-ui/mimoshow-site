@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, Truck, Ticket, CheckCircle2, X } from 'lucide-react';
 import { ItemCarrinho } from '@/lib/types/checkout';
 import { Cupom } from '@/lib/types/coupon';
+import { trackRemoveFromCart, trackShippingCalculated, trackCouponApplied, trackBeginCheckout } from '@/lib/analytics/events';
 
 const DEFAULT_PRODUCT_IMAGE = 'https://http2.mlstatic.com/D_NQ_NP_2X_736630-MLB72661556093_112023-F.webp';
 
@@ -89,6 +90,10 @@ export default function CarrinhoPage() {
   }
 
   function removerItem(id: string) {
+    const itemRemovido = itens.find(item => item.id === id);
+    if (itemRemovido) {
+      trackRemoveFromCart(itemRemovido, itemRemovido.quantidade || 1);
+    }
     const novos = itens.filter(item => item.id !== id);
     salvarCarrinho(novos);
     if (cupomAplicado) revalidarCupomExistente(cupomAplicado.codigo, novos);
@@ -143,11 +148,16 @@ export default function CarrinhoPage() {
         try {
           localStorage.setItem('cupom_aplicado', JSON.stringify(payload));
         } catch {}
+        trackCouponApplied(targetCodigo, data.descontoAplicado, true);
       } else {
-        setErroCupom(data.erro || 'Cupom inválido.');
+        const msg = data.erro || 'Cupom inválido.';
+        setErroCupom(msg);
+        trackCouponApplied(targetCodigo, 0, false, msg);
       }
     } catch {
-      setErroCupom('Erro ao validar cupom.');
+      const msg = 'Erro ao validar cupom.';
+      setErroCupom(msg);
+      trackCouponApplied(targetCodigo, 0, false, msg);
     }
     setValidandoCupom(false);
   }
@@ -177,12 +187,16 @@ export default function CarrinhoPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.opcoes?.length > 0) {
-          setValorFrete(data.opcoes[0].valor);
+          const opt = data.opcoes[0];
+          setValorFrete(opt.valor);
+          trackShippingCalculated(opt.nome || 'Entrega', opt.valor, cepLimpo);
         } else {
           setValorFrete(15.00);
+          trackShippingCalculated('Entrega Padrão', 15.00, cepLimpo);
         }
       } else {
         setValorFrete(15.00);
+        trackShippingCalculated('Entrega Padrão', 15.00, cepLimpo);
       }
     } catch {
       setValorFrete(15.00);
@@ -471,7 +485,8 @@ export default function CarrinhoPage() {
 
               <Link
                 href="/checkout"
-                className="w-full block text-center bg-primary hover:bg-orange-600 text-white font-bold text-base py-4 rounded-xl transition shadow-md"
+                onClick={() => trackBeginCheckout(itens, total, cupomAplicado?.codigo)}
+                className="w-full block text-center bg-primary hover:bg-orange-600 text-white font-bold text-base py-4 rounded-xl transition shadow-md cursor-pointer"
               >
                 Finalizar Compra
               </Link>

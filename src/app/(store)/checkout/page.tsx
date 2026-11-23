@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Truck, CheckCircle2, ChevronRight, ArrowLeft, ShoppingBag, ShieldCheck, Store, Ticket, X } from 'lucide-react';
 import { OpcaoFrete, ItemCarrinho, Cliente, Endereco } from '@/lib/types/checkout';
+import { trackBeginCheckout, trackShippingCalculated, trackCouponApplied, trackPaymentInfo, trackError } from '@/lib/analytics/events';
 
 export default function CheckoutPage() {
   const [etapa, setEtapa] = useState<'endereco' | 'entrega' | 'resumo'>('endereco');
@@ -46,22 +47,31 @@ export default function CheckoutPage() {
   useEffect(() => {
     try {
       const cartRaw = localStorage.getItem('carrinho');
+      let loadedItens = getExemploCarrinho();
       if (cartRaw) {
         const parsed = JSON.parse(cartRaw);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          loadedItens = parsed;
           setItens(parsed);
         } else {
-          setItens(getExemploCarrinho());
+          setItens(loadedItens);
         }
       } else {
-        setItens(getExemploCarrinho());
+        setItens(loadedItens);
       }
 
       // Restaurar cupom de desconto aplicado no carrinho
+      let codigoCupom: string | undefined = undefined;
       const cupomSalvo = localStorage.getItem('cupom_aplicado');
       if (cupomSalvo) {
-        setCupomAplicado(JSON.parse(cupomSalvo));
+        const parsedCupom = JSON.parse(cupomSalvo);
+        setCupomAplicado(parsedCupom);
+        codigoCupom = parsedCupom?.codigo;
       }
+
+      // Disparar evento begin_checkout
+      const totalIni = loadedItens.reduce((sum: number, i: any) => sum + (Number(i.preco_unitario || i.preco || 0) * Number(i.quantidade || 1)), 0);
+      trackBeginCheckout(loadedItens, totalIni, codigoCupom);
     } catch {
       setItens(getExemploCarrinho());
     }
@@ -104,11 +114,16 @@ export default function CheckoutPage() {
         try {
           localStorage.setItem('cupom_aplicado', JSON.stringify(payload));
         } catch {}
+        trackCouponApplied(targetCodigo, data.descontoAplicado, true);
       } else {
-        setErroCupom(data.erro || 'Cupom inválido.');
+        const msg = data.erro || 'Cupom inválido.';
+        setErroCupom(msg);
+        trackCouponApplied(targetCodigo, 0, false, msg);
       }
     } catch {
-      setErroCupom('Erro ao validar cupom.');
+      const msg = 'Erro ao validar cupom.';
+      setErroCupom(msg);
+      trackCouponApplied(targetCodigo, 0, false, msg);
     }
     setValidandoCupom(false);
   }
@@ -153,6 +168,7 @@ export default function CheckoutPage() {
   async function irParaEntrega(e: React.FormEvent) {
     e.preventDefault();
     if (!nomeCompleto || !cpfCnpj || !email || !cep || !logradouro || !numero || !cidade || !uf) {
+      trackError('checkout', 'Campos obrigatórios de endereço não preenchidos.');
       alert('Por favor, preencha todos os campos obrigatórios do endereço.');
       return;
     }
@@ -172,6 +188,7 @@ export default function CheckoutPage() {
         setOpcoesFrete(data.opcoes || []);
         if (data.opcoes?.length > 0) {
           setFreteSelecionado(data.opcoes[0]);
+          trackShippingCalculated(data.opcoes[0].nome, data.opcoes[0].valor, cep);
         }
       }
     } catch {
@@ -221,6 +238,7 @@ export default function CheckoutPage() {
       ];
       setOpcoesFrete(fretesFallback);
       setFreteSelecionado(fretesFallback[0]);
+      trackShippingCalculated(fretesFallback[0].nome, fretesFallback[0].valor, cep);
     }
 
     setCalculandoFrete(false);
@@ -247,6 +265,8 @@ export default function CheckoutPage() {
         total: Math.max(0, subtotal - (cupomAplicado ? cupomAplicado.desconto : 0) + (freteSelecionado ? freteSelecionado.valor : 0))
       };
 
+      trackPaymentInfo('Mercado Pago', payload.total, cupomAplicado?.codigo);
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -263,9 +283,12 @@ export default function CheckoutPage() {
         }
         window.location.href = data.checkoutUrl;
       } else {
-        alert(data.erro || 'Falha ao conectar com o Mercado Pago. Verifique as credenciais.');
+        const erroMsg = data.erro || 'Falha ao conectar com o Mercado Pago. Verifique as credenciais.';
+        trackError('pagamento', erroMsg);
+        alert(erroMsg);
       }
     } catch {
+      trackError('pagamento', 'Ocorreu um erro ao comunicar com a central de pagamentos.');
       alert('Ocorreu um erro ao comunicar com a central de pagamentos.');
     } finally {
       setProcessandoPagamento(false);
@@ -384,6 +407,7 @@ export default function CheckoutPage() {
                     <input
                       required
                       type="text"
+                      data-clarity-mask="true"
                       value={nomeCompleto}
                       onChange={e => setNomeCompleto(e.target.value)}
                       placeholder={tipoPessoa === 'PF' ? 'Ex: Maria Oliveira' : 'Ex: Pet Shop Silva LTDA'}
@@ -398,6 +422,7 @@ export default function CheckoutPage() {
                     <input
                       required
                       type="text"
+                      data-clarity-mask="true"
                       value={cpfCnpj}
                       onChange={e => setCpfCnpj(e.target.value)}
                       placeholder={tipoPessoa === 'PF' ? '000.000.000-00' : '00.000.000/0001-00'}
@@ -410,6 +435,7 @@ export default function CheckoutPage() {
                     <input
                       required
                       type="email"
+                      data-clarity-mask="true"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="seu@email.com"
@@ -422,6 +448,7 @@ export default function CheckoutPage() {
                     <input
                       required
                       type="tel"
+                      data-clarity-mask="true"
                       value={telefone}
                       onChange={e => setTelefone(e.target.value)}
                       placeholder="(11) 99999-9999"

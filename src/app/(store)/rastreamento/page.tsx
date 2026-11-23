@@ -17,10 +17,12 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { trackPurchase } from '@/lib/analytics/events';
 
 function RastreamentoContent() {
   const searchParams = useSearchParams();
   const queryPedido = searchParams.get('pedido') || searchParams.get('codigo') || '';
+  const statusParam = searchParams.get('status') || searchParams.get('collection_status');
   
   const [busca, setBusca] = useState(queryPedido);
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,6 @@ function RastreamentoContent() {
   const [buscado, setBuscado] = useState(false);
 
   useEffect(() => {
-    const statusParam = searchParams.get('status') || searchParams.get('collection_status');
     const paymentIdParam = searchParams.get('payment_id') || searchParams.get('collection_id');
 
     if (queryPedido && paymentIdParam && (statusParam === 'sucesso' || statusParam === 'approved' || statusParam === 'success')) {
@@ -88,6 +89,17 @@ function RastreamentoContent() {
 
       if (enc) {
         setPedido(enc);
+        const statusPed = (enc.status || '').toString().toUpperCase().trim();
+        const isAprovado = ['PAGAMENTO_APROVADO', 'PAGO', 'APROVADO', 'EM_SEPARACAO', 'ENVIADO', 'ENTREGUE'].includes(statusPed) || statusParam === 'sucesso' || statusParam === 'approved';
+        if (isAprovado) {
+          const num = String(enc.numero_pedido || enc.id);
+          const itensPed = enc.items || enc.itens || [];
+          const totalVal = Number(enc.total || 0);
+          const freteVal = Number(enc.frete?.valor || enc.valor_frete || 0);
+          const descVal = Number(enc.desconto || 0);
+          const cupomCod = enc.cupom?.codigo || undefined;
+          trackPurchase(num, itensPed, totalVal, freteVal, descVal, cupomCod);
+        }
       }
     } catch (err) {
       console.error('Erro ao consultar pedido:', err);

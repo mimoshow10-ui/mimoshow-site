@@ -28,7 +28,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Adesivos Pet',
     subtitulo: 'Piercings e EVA Glitter',
     link_url: '/categoria/adesivos',
-    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/16597512806/produto_16597512806_10_1788997374469.jpg',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/encontre-rapido/adesivos_1794322290756.png',
     ativo: true,
   },
   {
@@ -44,7 +44,7 @@ const ATALHOS_FALLBACK: SegmentoItem[] = [
     nome: 'Lacinhos',
     subtitulo: 'Apliques e Borrachinhas',
     link_url: '/categoria/lacinhos',
-    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/15951711280/produto_15951711280_0_1789157429390.jpg',
+    imagem_url: 'https://dehtqlcevoheqajejjcv.supabase.co/storage/v1/object/public/produtos-fotos/encontre-rapido/lacinhos_1794322290756.jpg',
     ativo: true,
   },
   {

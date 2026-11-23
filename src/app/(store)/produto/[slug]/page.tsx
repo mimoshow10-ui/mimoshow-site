@@ -12,6 +12,7 @@ import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
 import SafeComponent from '@/components/SafeComponent';
+import ProductViewTracker from '@/components/analytics/ProductViewTracker';
 import { notFound } from 'next/navigation';
 import { hasValidPhoto } from '@/lib/productFilter';
 import { Sparkles, Tag, ShieldCheck, Factory } from 'lucide-react';
@@ -151,6 +152,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4 md:py-10 space-y-10">
+      <ProductViewTracker produto={produto} />
 
       {/* ── Bloco principal: Foto e Descrição | Info e Compra ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-start">

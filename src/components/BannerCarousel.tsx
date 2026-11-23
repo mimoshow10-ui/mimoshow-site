@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getOptimizedImageUrl } from '@/lib/imageExtractor';
+import { trackSelectPromotion } from '@/lib/analytics/events';
 
 interface BannerItem {
   url: string;
@@ -65,7 +66,11 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
           return (
             <div key={idx} className="min-w-full h-full flex-shrink-0 relative">
               {banner.link_url ? (
-                <Link href={banner.link_url} className="block w-full h-full">
+                <Link
+                  href={banner.link_url}
+                  onClick={() => trackSelectPromotion(banner.alt || `Banner ${idx + 1}`, idx, banner.link_url)}
+                  className="block w-full h-full"
+                >
                   {content}
                 </Link>
               ) : (
