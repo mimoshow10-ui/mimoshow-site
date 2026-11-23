@@ -164,9 +164,19 @@ export async function salvarFreteConfig(formData: FormData) {
 
 export async function salvarAnalyticsConfig(formData: FormData) {
   try {
-    const gtm_id = (formData.get('gtm_id') as string || '').trim();
-    const ga4_measurement_id = (formData.get('ga4_measurement_id') as string || '').trim();
-    const clarity_project_id = (formData.get('clarity_project_id') as string || '').trim();
+    let rawGtm = (formData.get('gtm_id') as string || '').trim();
+    let rawGa4 = (formData.get('ga4_measurement_id') as string || '').trim();
+    let rawClarity = (formData.get('clarity_project_id') as string || '').trim();
+
+    // Auto-extração inteligente caso o usuário cole a tag <script> inteira ou URL
+    const gtmMatch = rawGtm.match(/GTM-[A-Z0-9]+/i) || rawGa4.match(/GTM-[A-Z0-9]+/i);
+    const ga4Match = rawGa4.match(/G-[A-Z0-9]+/i) || rawGtm.match(/G-[A-Z0-9]+/i);
+    const clarityMatch = rawClarity.match(/clarity\.ms\/tag\/([a-z0-9]+)/i) || rawClarity.match(/^[a-z0-9]{8,12}$/i);
+
+    const gtm_id = gtmMatch ? gtmMatch[0].toUpperCase() : (rawGtm.startsWith('<') ? '' : rawGtm);
+    const ga4_measurement_id = ga4Match ? ga4Match[0].toUpperCase() : (rawGa4.startsWith('<') ? '' : rawGa4);
+    const clarity_project_id = clarityMatch ? (clarityMatch[1] || clarityMatch[0]).toLowerCase() : (rawClarity.startsWith('<') ? '' : rawClarity);
+
     const ativo = formData.get('ativo') === 'on';
     const debug_mode = formData.get('debug_mode') === 'on';
 
@@ -190,7 +200,7 @@ export async function salvarAnalyticsConfig(formData: FormData) {
     revalidatePath('/admin/configuracoes');
     revalidatePath('/admin/analytics');
     revalidatePath('/');
-    return { sucesso: true, mensagem: 'Configurações de Analytics (GTM, GA4, Clarity) salvas com sucesso!' };
+    return { sucesso: true, mensagem: 'Configurações de Analytics salvas com sucesso!' };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar configurações de Analytics.' };
   }

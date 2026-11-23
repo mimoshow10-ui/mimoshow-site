@@ -9,9 +9,9 @@ interface Props {
 }
 
 export default function AnalyticsScripts({ config }: Props) {
-  const gtmId = config?.gtm_id?.trim() || '';
-  const ga4Id = config?.ga4_measurement_id?.trim() || '';
-  const clarityId = config?.clarity_project_id?.trim() || '';
+  const gtmId = (config?.gtm_id?.match(/GTM-[A-Z0-9]+/i)?.[0] || config?.gtm_id || '').trim();
+  const ga4Id = (config?.ga4_measurement_id?.match(/G-[A-Z0-9]+/i)?.[0] || config?.ga4_measurement_id || '').trim();
+  const clarityId = (config?.clarity_project_id?.match(/clarity\.ms\/tag\/([a-z0-9]+)/i)?.[1] || config?.clarity_project_id || '').trim();
   const ativo = config?.ativo !== false;
   const isDebug = Boolean(config?.debug_mode);
 
