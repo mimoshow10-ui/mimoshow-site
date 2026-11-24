@@ -190,7 +190,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
         </div>
 
         {/* COLUNA DIREITA — Nome, preço, economia unitária, variações, botões, frete */}
-        <div className="flex flex-col gap-4 md:sticky md:top-24 md:self-start">
+        <div className="flex flex-col gap-4">
 
           {/* Selo de Fabricação Própria */}
           <div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-900 border border-orange-200 text-[11px] font-black uppercase px-2.5 py-1 rounded-full w-fit">

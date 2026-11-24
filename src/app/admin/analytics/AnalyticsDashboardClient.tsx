@@ -15,6 +15,7 @@ import {
   Copy,
   Layers,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { AnalyticsConfig } from '@/lib/analytics/types';
 import {
@@ -82,6 +83,18 @@ export default function AnalyticsDashboardClient({ config }: Props) {
 
   function limparLogs() {
     setLogs([]);
+  }
+
+  const [runningAll, setRunningAll] = useState(false);
+
+  async function dispararTodos() {
+    if (runningAll) return;
+    setRunningAll(true);
+    for (let i = 0; i < simulacoes.length; i++) {
+      simulacoes[i].exec();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    setRunningAll(false);
   }
 
   // Funções de Disparo de Teste para Validação
@@ -330,6 +343,17 @@ export default function AnalyticsDashboardClient({ config }: Props) {
                 Clique nos botões para disparar os eventos para o Data Layer local e verificar o payload sanitizado no painel ao lado.
               </p>
             </div>
+
+            {/* BOTÃO PARA DISPARAR TODOS OS TESTES EM SEQUÊNCIA */}
+            <button
+              type="button"
+              onClick={dispararTodos}
+              disabled={runningAll}
+              className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles size={16} className={runningAll ? 'animate-spin' : ''} />
+              <span>{runningAll ? 'Disparando os 14 eventos em sequência...' : '⚡ Disparar Todos os 14 Testes de Uma Vez (Jornada Completa)'}</span>
+            </button>
 
             <div className="grid grid-cols-1 gap-2 max-h-[580px] overflow-y-auto pr-1">
               {simulacoes.map((sim, i) => (
