@@ -16,6 +16,11 @@ import {
   Layers,
   ArrowRight,
   Sparkles,
+  Compass,
+  TrendingUp,
+  Video,
+  Target,
+  Lightbulb,
 } from 'lucide-react';
 import { AnalyticsConfig } from '@/lib/analytics/types';
 import {
@@ -49,7 +54,7 @@ interface LoggedEvent {
 export default function AnalyticsDashboardClient({ config }: Props) {
   const [logs, setLogs] = useState<LoggedEvent[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'validador' | 'guia'>('validador');
+  const [activeTab, setActiveTab] = useState<'validador' | 'mapa' | 'guia'>('mapa');
 
   const gtmOk = Boolean(config?.gtm_id);
   const ga4Ok = Boolean(config?.ga4_measurement_id);
@@ -261,7 +266,18 @@ export default function AnalyticsDashboardClient({ config }: Props) {
             )}
           </div>
           <p className="text-sm font-mono font-bold text-gray-800">{config?.gtm_id || 'Não configurado'}</p>
-          <span className="text-[10px] text-gray-400 mt-2">Container GTM</span>
+          <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[10px] text-gray-400">Container de Tags</span>
+            <a
+              href="https://tagmanager.google.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              <span>Abrir GTM</span>
+              <ExternalLink size={10} />
+            </a>
+          </div>
         </div>
 
         {/* GA4 */}
@@ -275,7 +291,18 @@ export default function AnalyticsDashboardClient({ config }: Props) {
             )}
           </div>
           <p className="text-sm font-mono font-bold text-gray-800">{config?.ga4_measurement_id || 'Não configurado'}</p>
-          <span className="text-[10px] text-gray-400 mt-2">ID de Medição</span>
+          <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[10px] text-gray-400">ID de Medição</span>
+            <a
+              href="https://analytics.google.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1"
+            >
+              <span>Abrir Analytics</span>
+              <ExternalLink size={10} />
+            </a>
+          </div>
         </div>
 
         {/* Clarity */}
@@ -289,7 +316,18 @@ export default function AnalyticsDashboardClient({ config }: Props) {
             )}
           </div>
           <p className="text-sm font-mono font-bold text-gray-800">{config?.clarity_project_id || 'Não configurado'}</p>
-          <span className="text-[10px] text-gray-400 mt-2">Heatmaps & Gravações</span>
+          <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[10px] text-gray-400">Heatmaps & Gravações</span>
+            <a
+              href={config?.clarity_project_id ? `https://clarity.microsoft.com/projects/view/${config.clarity_project_id}/dashboard` : 'https://clarity.microsoft.com/'}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1"
+            >
+              <span>Ver Gravações</span>
+              <ExternalLink size={10} />
+            </a>
+          </div>
         </div>
 
         {/* LGPD */}
@@ -299,7 +337,42 @@ export default function AnalyticsDashboardClient({ config }: Props) {
             <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-700">CONFORME</span>
           </div>
           <p className="text-sm font-bold text-gray-800">Consentimento Blindado</p>
-          <span className="text-[10px] text-gray-400 mt-2">Default: Denied + Mascaramento PII</span>
+          <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[10px] text-gray-400">Mascaramento PII</span>
+            <span className="text-[10px] font-black text-blue-700">Proteção Ativa</span>
+          </div>
+        </div>
+      </div>
+
+      {/* BANNER DE ACESSO RÁPIDO AOS PAINÉIS EXTERNOS */}
+      <div className="bg-gradient-to-r from-[#0B2545] via-blue-900 to-indigo-950 p-6 rounded-3xl text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="font-heading font-black text-lg text-amber-400 flex items-center gap-2">
+            <span>🚀 Acesso Rápido aos seus Painéis Oficiais</span>
+          </h3>
+          <p className="text-xs text-blue-100 max-w-xl">
+            Clique nos botões abaixo para ir direto para os painéis onde você analisa vendas, descobre produtos mais buscados e assiste aos vídeos dos clientes:
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <a
+            href="https://analytics.google.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 md:flex-none px-5 py-3 bg-amber-400 hover:bg-amber-300 text-blue-950 font-black text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>📊 Abrir Google Analytics</span>
+            <ExternalLink size={14} />
+          </a>
+          <a
+            href={config?.clarity_project_id ? `https://clarity.microsoft.com/projects/view/${config.clarity_project_id}/dashboard` : 'https://clarity.microsoft.com/'}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 md:flex-none px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>🎥 Assistir Vídeos no Clarity</span>
+            <ExternalLink size={14} />
+          </a>
         </div>
       </div>
 
@@ -307,8 +380,20 @@ export default function AnalyticsDashboardClient({ config }: Props) {
       <div className="flex gap-2 border-b border-gray-200 pb-2">
         <button
           type="button"
+          onClick={() => setActiveTab('mapa')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+            activeTab === 'mapa'
+              ? 'bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-xs'
+              : 'text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Compass size={14} className={activeTab === 'mapa' ? 'text-amber-400' : ''} />
+          <span>🗺️ Mapa Mental & Como Lucrar Mais</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('validador')}
-          className={`px-4 py-2 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
             activeTab === 'validador'
               ? 'bg-[#0B2545] text-white shadow-xs'
               : 'text-gray-600 hover:bg-gray-200'
@@ -320,7 +405,7 @@ export default function AnalyticsDashboardClient({ config }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab('guia')}
-          className={`px-4 py-2 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 ${
             activeTab === 'guia'
               ? 'bg-[#0B2545] text-white shadow-xs'
               : 'text-gray-600 hover:bg-gray-200'
@@ -529,6 +614,190 @@ export default function AnalyticsDashboardClient({ config }: Props) {
               </div>
               <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
                 <strong>error_event:</strong> Erros de sistema/pagamento
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABA: MAPA MENTAL & GUIA ESTRATÉGICO */}
+      {activeTab === 'mapa' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Header do Guia */}
+          <div className="bg-gradient-to-br from-blue-950 via-[#0B2545] to-indigo-950 p-6 sm:p-8 rounded-3xl text-white shadow-md border border-blue-900/60">
+            <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider block mb-1">
+              Guia Prático do Lojista Mimo Show
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-heading font-black text-white leading-tight">
+              Como Transformar Esses Dados em Mais Vendas e Lucro 🚀
+            </h2>
+            <p className="text-sm text-blue-100 mt-2 max-w-3xl leading-relaxed">
+              Você não precisa ser técnico nem entender de programação. Essas 3 ferramentas trabalham como seus funcionários mais leais nos bastidores, vigiando a loja 24 horas por dia. Veja exatamente como usar cada uma a seu favor:
+            </p>
+          </div>
+
+          {/* Os 3 Pilares de Lucro */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Pilar 1: GA4 */}
+            <div className="bg-white p-6 rounded-3xl border border-emerald-200 shadow-sm flex flex-col justify-between space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
+                  <TrendingUp size={20} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider">O Cérebro das Vendas</span>
+                  <h3 className="text-lg font-bold text-gray-800">Google Analytics 4</h3>
+                </div>
+                <div className="space-y-2 text-xs text-gray-600 leading-relaxed">
+                  <p><strong>O que ele te responde:</strong></p>
+                  <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                    <li>Quantos clientes visitaram hoje e de onde vieram (Instagram, Google, Direto).</li>
+                    <li>Quais kits de gravatas, adesivos ou bandanas são os mais clicados.</li>
+                    <li>Quantas pessoas desistiram na hora de pagar o frete.</li>
+                  </ul>
+                  <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200/60 mt-3">
+                    <p className="font-bold text-emerald-900 flex items-center gap-1 mb-1">
+                      <Lightbulb size={13} className="text-emerald-700" />
+                      <span>Como lucrar com isso:</span>
+                    </p>
+                    <p className="text-emerald-800 text-[11px]">
+                      Se um kit pet é muito visto mas pouco comprado, diminua a quantidade mínima ou faça uma promoção. Se o Instagram gera 80% das vendas, invista mais postagens lá!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href="https://analytics.google.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>Abrir Google Analytics</span>
+                <ExternalLink size={12} />
+              </a>
+            </div>
+
+            {/* Pilar 2: Clarity */}
+            <div className="bg-white p-6 rounded-3xl border border-purple-200 shadow-sm flex flex-col justify-between space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-purple-500"></div>
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-black">
+                  <Video size={20} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-purple-700 tracking-wider">O Espião Invisível</span>
+                  <h3 className="text-lg font-bold text-gray-800">Microsoft Clarity</h3>
+                </div>
+                <div className="space-y-2 text-xs text-gray-600 leading-relaxed">
+                  <p><strong>O que ele te responde:</strong></p>
+                  <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                    <li>Grava a tela em vídeo com os movimentos do mouse e toques no celular.</li>
+                    <li>Mapa de Calor: mostra exatamente as cores onde os clientes mais clicam.</li>
+                    <li>Cliques de raiva: avisa quando o cliente clica repetidas vezes frustrado em algo.</li>
+                  </ul>
+                  <div className="bg-purple-50 p-3 rounded-xl border border-purple-200/60 mt-3">
+                    <p className="font-bold text-purple-900 flex items-center gap-1 mb-1">
+                      <Lightbulb size={13} className="text-purple-700" />
+                      <span>Como lucrar com isso:</span>
+                    </p>
+                    <p className="text-purple-800 text-[11px]">
+                      Assista a 5 vídeos de clientes por semana no celular. Se você ver alguém perdido sem achar o botão de comprar, você melhora a foto ou descrição na hora!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href={config?.clarity_project_id ? `https://clarity.microsoft.com/projects/view/${config.clarity_project_id}/dashboard` : 'https://clarity.microsoft.com/'}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>Assistir Vídeos no Clarity</span>
+                <ExternalLink size={12} />
+              </a>
+            </div>
+
+            {/* Pilar 3: GTM */}
+            <div className="bg-white p-6 rounded-3xl border border-blue-200 shadow-sm flex flex-col justify-between space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center font-black">
+                  <Target size={20} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-blue-700 tracking-wider">A Chave dos Anúncios</span>
+                  <h3 className="text-lg font-bold text-gray-800">Google Tag Manager</h3>
+                </div>
+                <div className="space-y-2 text-xs text-gray-600 leading-relaxed">
+                  <p><strong>O que ele te responde:</strong></p>
+                  <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                    <li>Permite instalar Pixel do Facebook/Instagram (Meta Ads) sem tocar em código.</li>
+                    <li>Conecta tags de conversão do Google Ads para campanhas pagas.</li>
+                    <li>Centraliza todas as ferramentas de marketing em um único lugar seguro.</li>
+                  </ul>
+                  <div className="bg-blue-50 p-3 rounded-xl border border-blue-200/60 mt-3">
+                    <p className="font-bold text-blue-900 flex items-center gap-1 mb-1">
+                      <Lightbulb size={13} className="text-blue-700" />
+                      <span>Como lucrar com isso:</span>
+                    </p>
+                    <p className="text-blue-800 text-[11px]">
+                      Fazer Remarketing: perseguir no Instagram e Facebook quem entrou no site, colocou produto no carrinho e não comprou, com um anúncio de desconto!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href="https://tagmanager.google.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>Abrir Tag Manager</span>
+                <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+
+          {/* O Ciclo de Vendas em 4 Etapas */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-6">
+            <h3 className="font-heading font-black text-xl text-gray-800 flex items-center gap-2">
+              <span>🔄 O Ciclo Prático de Sucesso da Mimo Show</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/70 space-y-2">
+                <span className="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">1</span>
+                <h4 className="font-bold text-sm text-gray-800">Atrair Clientes</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Você posta novidades de laços e gravatas no Instagram ou faz anúncios. O <strong>GA4</strong> mostra quantos cliques gerou.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/70 space-y-2">
+                <span className="w-7 h-7 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center">2</span>
+                <h4 className="font-bold text-sm text-gray-800">Assistir a Navegação</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  No <strong>Clarity</strong>, você assiste aos vídeos para ver quais fotos e descrições os clientes mais olham no celular.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/70 space-y-2">
+                <span className="w-7 h-7 rounded-full bg-amber-600 text-white font-black text-xs flex items-center justify-center">3</span>
+                <h4 className="font-bold text-sm text-gray-800">Descobrir Dificuldades</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Se muitos clientes abandonam o carrinho no frete, você cria uma faixa de <em>Frete Grátis acima de R$ 150</em> para destravar as vendas.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/70 space-y-2">
+                <span className="w-7 h-7 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center">4</span>
+                <h4 className="font-bold text-sm text-gray-800">Multiplicar o Faturamento</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Com base no que os donos de pet shop realmente querem, você cria kits certeiros direto da fábrica e aumenta o ticket médio da loja!
+                </p>
               </div>
             </div>
           </div>

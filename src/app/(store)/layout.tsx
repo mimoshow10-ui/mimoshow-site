@@ -23,7 +23,7 @@ export default function StoreLayout({
         href="https://wa.me/5511930813280?text=Olá!%20Gostaria%20de%20tirar%20uma%20dúvida%20sobre%20os%20produtos%20da%20loja." 
         target="_blank" 
         rel="noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300"
+        className="fixed bottom-6 right-6 z-[9999] bg-[#25D366] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300"
         title="Fale Conosco pelo WhatsApp"
       >
         <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">

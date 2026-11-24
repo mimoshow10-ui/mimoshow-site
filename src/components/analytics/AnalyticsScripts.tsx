@@ -53,6 +53,66 @@ export default function AnalyticsScripts({ config }: Props) {
             });
             gtag('set', 'ads_data_redaction', true);
             gtag('set', 'url_passthrough', true);
+
+            // Bloquear carregamento e execução do JivoChat injetado via GTM
+            window.jivo_destroy = function(){};
+            window.jivo_init = function(){};
+            (function() {
+              if (typeof document === 'undefined') return;
+              var origCreate = document.createElement;
+              document.createElement = function(tag, opt) {
+                var el = origCreate.call(document, tag, opt);
+                if (typeof tag === 'string' && tag.toLowerCase() === 'script') {
+                  var origSetAttr = el.setAttribute;
+                  el.setAttribute = function(k, v) {
+                    if (k === 'src' && typeof v === 'string' && v.indexOf('jivosite') !== -1) {
+                      return;
+                    }
+                    return origSetAttr.apply(this, arguments);
+                  };
+                  try {
+                    Object.defineProperty(el, 'src', {
+                      set: function(v) {
+                        if (typeof v === 'string' && v.indexOf('jivosite') !== -1) {
+                          return;
+                        }
+                        origSetAttr.call(el, 'src', v);
+                      },
+                      get: function() {
+                        return el.getAttribute('src') || '';
+                      },
+                      configurable: true
+                    });
+                  } catch(e) {}
+                }
+                return el;
+              };
+            })();
+
+            if (typeof MutationObserver !== 'undefined') {
+              var jivoObserver = new MutationObserver(function(mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                  var nodes = mutations[i].addedNodes;
+                  for (var j = 0; j < nodes.length; j++) {
+                    var node = nodes[j];
+                    if (node && node.nodeType === 1) {
+                      var id = node.id || '';
+                      var tag = node.tagName || '';
+                      var src = node.src || '';
+                      if (
+                        id === 'jivo-iframe-container' ||
+                        id.indexOf('jivo') === 0 ||
+                        tag === 'JDIV' ||
+                        src.indexOf('jivosite') !== -1
+                      ) {
+                        node.remove();
+                      }
+                    }
+                  }
+                }
+              });
+              jivoObserver.observe(document.documentElement, { childList: true, subtree: true });
+            }
           `,
         }}
       />
