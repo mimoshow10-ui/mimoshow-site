@@ -203,6 +203,29 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             {produto.nome || 'Produto'}
           </h1>
 
+          {/* Faixa Oficial Black Friday 35% OFF */}
+          <div className="bg-gradient-to-r from-neutral-950 via-red-600 to-neutral-950 text-white p-3 rounded-2xl border-2 border-red-500/50 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl animate-pulse">🔥</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-black text-xs sm:text-sm tracking-wide text-white uppercase">
+                    BLACK FRIDAY MIMO SHOW
+                  </span>
+                  <span className="bg-yellow-400 text-neutral-950 text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded uppercase font-mono shadow-xs">
+                    35% OFF
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-200 font-bold leading-tight mt-0.5">
+                  Desconto de 35% direto da fábrica aplicado no produto!
+                </p>
+              </div>
+            </div>
+            <div className="bg-red-500/40 border border-red-400/80 text-yellow-300 font-mono font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-xl whitespace-nowrap self-end sm:self-auto shadow-xs">
+              ⏰ APENAS HOJE!
+            </div>
+          </div>
+
           {/* Preço e Economia por Unidade */}
           <div className="space-y-1 bg-gray-50/80 p-4 rounded-2xl border border-gray-200/80">
             <div className="flex items-end gap-3 flex-wrap">
@@ -210,6 +233,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
                 <>
                   <span className="text-base text-gray-400 line-through">R$ {preco.toFixed(2).replace('.', ',')}</span>
                   <span className="text-3xl md:text-4xl font-black text-primary">R$ {precoPromo.toFixed(2).replace('.', ',')}</span>
+                  <span className="bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-xs uppercase animate-pulse">
+                    -35% OFF
+                  </span>
                 </>
               ) : (
                 <span className="text-3xl md:text-4xl font-black text-primary block">R$ {preco.toFixed(2).replace('.', ',')}</span>

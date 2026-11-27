@@ -25,12 +25,40 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
   const activeBanners = banners && banners.length > 0 ? banners : defaultBanners;
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Estados para Gestos de Toque (Swipe no Celular)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const minSwipeDistance = 45;
+
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev === activeBanners.length - 1 ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev === 0 ? activeBanners.length - 1 : prev - 1));
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
   };
 
   useEffect(() => {
@@ -40,7 +68,12 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
   }, [activeBanners.length]);
 
   return (
-    <div className="relative w-full overflow-hidden group bg-gray-100 h-[160px] sm:h-[220px] md:h-[270px] lg:h-[300px]">
+    <div 
+      className="relative w-full overflow-hidden group bg-gray-100 aspect-[3/1] max-h-[420px] rounded-2xl shadow-xs select-none touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div 
         className="flex transition-transform duration-700 ease-in-out w-full h-full"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -54,7 +87,7 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
               loading={idx === 0 ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={idx === 0 ? 'high' : 'auto'}
-              className="w-full h-full object-cover select-none"
+              className="w-full h-full object-cover sm:object-cover select-none pointer-events-none"
               onError={(e) => {
                 if ((e.target as HTMLImageElement).src !== banner.url && banner.url) {
                   (e.target as HTMLImageElement).src = banner.url;
@@ -69,7 +102,7 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                 <Link
                   href={banner.link_url}
                   onClick={() => trackSelectPromotion(banner.alt || `Banner ${idx + 1}`, idx, banner.link_url)}
-                  className="block w-full h-full"
+                  className="block w-full h-full cursor-pointer"
                 >
                   {content}
                 </Link>
@@ -81,34 +114,48 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
         })}
       </div>
 
-      {/* Controles de Navegação */}
+      {/* Controles de Navegação (Setas visíveis e amigáveis ao toque no celular) */}
       {activeBanners.length > 1 && (
         <>
           <button 
-            onClick={prevSlide} 
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md z-10"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              prevSlide();
+            }} 
+            className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white p-1.5 sm:p-2 rounded-full opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-md z-10 active:scale-90 cursor-pointer"
             aria-label="Banner anterior"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <button 
-            onClick={nextSlide} 
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md z-10"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              nextSlide();
+            }} 
+            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white p-1.5 sm:p-2 rounded-full opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-md z-10 active:scale-90 cursor-pointer"
             aria-label="Próximo banner"
           >
-            <ChevronRight size={24} />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
-          {/* Dots Indicadores */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {/* Dots Indicadores com área de toque aumentada */}
+          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10 bg-black/20 backdrop-blur-xs px-2.5 py-1 rounded-full">
             {activeBanners.map((_, idx) => (
               <button 
                 key={idx}
-                onClick={() => setCurrentIndex(idx)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  idx === currentIndex ? "w-8 bg-primary shadow-md" : "w-2.5 bg-white/70 hover:bg-white"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(idx);
+                }}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  idx === currentIndex 
+                    ? "w-6 sm:w-8 h-2 sm:h-2.5 bg-primary shadow-md" 
+                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white/70 hover:bg-white"
                 }`}
-                aria-label={`Slide ${idx + 1}`}
+                aria-label={`Ir para Slide ${idx + 1}`}
               />
             ))}
           </div>

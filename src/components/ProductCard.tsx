@@ -62,7 +62,22 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
   const timerAtivo = temPromo && expiraTime !== null && !isNaN(expiraTime) && expiraTime > agora;
 
   return (
-    <div className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition-all border border-gray-200 overflow-hidden">
+    <div className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition-all border border-gray-200 overflow-hidden group">
+      {/* Faixa Black Friday 35% OFF */}
+      <Link href={`/produto/${produto.slug}`} className="block">
+        <div className="bg-gradient-to-r from-neutral-950 via-red-600 to-neutral-950 text-white py-1 px-2 text-center flex items-center justify-center gap-1.5 shadow-2xs select-none">
+          <span className="font-heading font-black text-[10px] sm:text-[11px] tracking-wider uppercase text-yellow-300 flex items-center gap-1">
+            <span>🔥</span> BLACK FRIDAY
+          </span>
+          <span className="bg-yellow-400 text-neutral-950 font-black text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-mono leading-tight">
+            35% OFF
+          </span>
+          <span className="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-wide">
+            • APENAS HOJE!
+          </span>
+        </div>
+      </Link>
+
       {/* Imagem do Produto com Badge de Desconto e Badge de SKU */}
       <Link href={`/produto/${produto.slug}`}>
         <div className="aspect-square bg-white relative overflow-hidden flex items-center justify-center p-1">
