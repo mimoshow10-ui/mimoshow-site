@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { salvarSenhaAdmin, salvarResendConfig, salvarCredenciais, salvarMercadoPago, salvarFreteConfig, salvarAnalyticsConfig } from './actions';
-import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, ShieldCheck, BarChart3 } from 'lucide-react';
+import { salvarSenhaAdmin, salvarResendConfig, salvarCredenciais, testarConexaoBling, salvarMercadoPago, salvarFreteConfig, salvarAnalyticsConfig } from './actions';
+import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, ShieldCheck, BarChart3, Copy, Check, ExternalLink, ShieldAlert, Sparkles, Activity } from 'lucide-react';
 
 interface Props {
   temSenhaConfigurada: boolean;
   resendConfig: { api_key?: string } | null;
-  creds: { client_id?: string; client_secret?: string; loja_id_banho_tosa?: string; loja_id_mimo_show?: string } | null;
-  mpCreds: { access_token?: string; public_key?: string } | null;
+  creds: {
+    client_id?: string;
+    has_secret?: boolean;
+    secret_is_vercel?: boolean;
+    is_from_env?: boolean;
+    loja_id_banho_tosa?: string;
+    loja_id_mimo_show?: string;
+  } | null;
+  blingTokensInfo?: {
+    temAccessToken: boolean;
+    temRefreshToken: boolean;
+    expiresAt?: number | null;
+    atualizadoEm?: string | null;
+  } | null;
+  mpCreds: { access_token?: string; public_key?: string; has_token?: boolean; is_from_env?: boolean } | null;
   freteConfig: {
     cep_origem?: string;
     token_frete?: string;
@@ -26,14 +39,17 @@ interface Props {
   } | null;
 }
 
-export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, creds, mpCreds, freteConfig, analyticsConfig }: Props) {
+export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, creds, blingTokensInfo, mpCreds, freteConfig, analyticsConfig }: Props) {
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [mostrarResendKey, setMostrarResendKey] = useState(false);
+  const [copiadoCallback, setCopiadoCallback] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState('');
 
   const [msgSenha, setMsgSenha] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgResend, setMsgResend] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgCreds, setMsgCreds] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [msgTesteBling, setMsgTesteBling] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgMp, setMsgMp] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgFrete, setMsgFrete] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgAnalytics, setMsgAnalytics] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
@@ -41,9 +57,41 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
   const [loadingSenha, setLoadingSenha] = useState(false);
   const [loadingResend, setLoadingResend] = useState(false);
   const [loadingCreds, setLoadingCreds] = useState(false);
+  const [loadingTesteBling, setLoadingTesteBling] = useState(false);
   const [loadingMp, setLoadingMp] = useState(false);
   const [loadingFrete, setLoadingFrete] = useState(false);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCallbackUrl(`${window.location.origin}/api/bling/callback`);
+    }
+  }, []);
+
+  async function handleTestarBling() {
+    setLoadingTesteBling(true);
+    setMsgTesteBling(null);
+    try {
+      const res = await testarConexaoBling();
+      if (res?.sucesso) {
+        setMsgTesteBling({ tipo: 'sucesso', texto: res.mensagem });
+      } else {
+        setMsgTesteBling({ tipo: 'erro', texto: res.mensagem || 'Falha ao testar conexão.' });
+      }
+    } catch (err: any) {
+      setMsgTesteBling({ tipo: 'erro', texto: err.message || 'Erro inesperado ao testar conexão.' });
+    } finally {
+      setLoadingTesteBling(false);
+    }
+  }
+
+  function handleCopiarCallback() {
+    if (callbackUrl) {
+      navigator.clipboard.writeText(callbackUrl);
+      setCopiadoCallback(true);
+      setTimeout(() => setCopiadoCallback(false), 2500);
+    }
+  }
 
   async function handleSalvarSenha(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -322,20 +370,96 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
       {/* AUTENTICAÇÃO DO BLING */}
       <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
-          <span>📦 Integração & Canais de Venda do Bling ERP</span>
-        </h2>
+        <div className="flex justify-between items-start flex-wrap gap-2 mb-2">
+          <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
+            <span>📦 Integração & Canais de Venda do Bling ERP</span>
+          </h2>
+          <div>
+            {msgTesteBling?.tipo === 'sucesso' ? (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-800 border border-green-300 flex items-center gap-1.5">
+                <CheckCircle2 size={14} className="text-green-600" /> Conexão 100% Operacional
+              </span>
+            ) : blingTokensInfo?.temAccessToken ? (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-blue-600" /> Token Cadastrado
+              </span>
+            ) : creds?.client_id ? (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5">
+                <AlertCircle size={14} className="text-amber-600" /> Requer Conexão
+              </span>
+            ) : (
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-300 flex items-center gap-1.5">
+                ⚪ Não Configurado
+              </span>
+            )}
+          </div>
+        </div>
+
         <p className="text-sm text-gray-600 mb-4">
           Configure a conexão da API e os <strong>IDs de Loja / Canal de Venda</strong> para que cada pedido seja gravado no Bling com o logotipo e nome exatos de onde veio a venda (Banho & Tosa Pet ou Mimo Show).
         </p>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 mb-6 text-xs text-blue-900 leading-relaxed space-y-1">
-          <p className="font-bold flex items-center gap-1.5 text-blue-950">
-            <KeyRound size={15} /> Como exibir o símbolo da loja no Bling:
-          </p>
-          <p>1. No Bling, acesse <strong>Configurações (ícone de engrenagem) ➔ Integrações ➔ Configurações de integrações / Lojas Virtuais</strong>.</p>
-          <p>2. Crie ou abra a integração para a sua loja (ex: tipo <strong>API / Loja Virtual</strong> chamada <em>"Banho e Tosa"</em> ou <em>"Mimo Show"</em>).</p>
-          <p>3. Copie o <strong>ID numérico</strong> da loja gerado pelo Bling (ex: <code>203551250</code>) e cole no campo correspondente abaixo.</p>
+        {/* FEEDBACK DE TESTE EM TEMPO REAL */}
+        {msgTesteBling && (
+          <div className={`p-4 rounded-xl font-bold text-xs flex items-start gap-2.5 mb-4 shadow-sm ${
+            msgTesteBling.tipo === 'sucesso' 
+              ? 'bg-green-50 text-green-900 border border-green-300' 
+              : 'bg-red-50 text-red-900 border border-red-300'
+          }`}>
+            {msgTesteBling.tipo === 'sucesso' ? (
+              <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-green-600" />
+            ) : (
+              <ShieldAlert size={18} className="shrink-0 mt-0.5 text-red-600" />
+            )}
+            <div className="flex-1">
+              <p className="font-extrabold text-sm mb-0.5">
+                {msgTesteBling.tipo === 'sucesso' ? 'Status: Conexão Validada' : 'Diagnóstico da Conexão Bling'}
+              </p>
+              <p className="font-normal leading-relaxed">{msgTesteBling.texto}</p>
+            </div>
+          </div>
+        )}
+
+        {/* INFORMAÇÕES DE CADASTRO NO APLICATIVO DO BLING */}
+        <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-4 mb-6 text-xs text-blue-950 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-bold flex items-center gap-1.5 text-blue-900">
+              <KeyRound size={15} className="text-blue-600" /> Configuração do Aplicativo no Bling (OAuth 2.0)
+            </span>
+            <a
+              href="https://www.bling.com.br"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 underline"
+            >
+              <span>Acessar Painel do Bling</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
+
+          <div className="bg-white border border-blue-200 rounded-lg p-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1 font-mono text-[11px] text-gray-700 truncate">
+              <span className="font-bold text-gray-900 block text-[10px] uppercase tracking-wider text-blue-900">
+                URL de Redirecionamento (Callback):
+              </span>
+              {callbackUrl || '/api/bling/callback'}
+            </div>
+            <button
+              type="button"
+              onClick={handleCopiarCallback}
+              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[11px] rounded-md transition flex items-center gap-1 shrink-0 cursor-pointer"
+              title="Copiar URL para o aplicativo do Bling"
+            >
+              {copiadoCallback ? <Check size={13} className="text-green-700" /> : <Copy size={13} />}
+              <span>{copiadoCallback ? 'Copiado!' : 'Copiar URL'}</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] text-blue-900 leading-relaxed space-y-1">
+            <p>1. No Bling, acesse <strong>Preferências (engrenagem) ➔ Sistema ➔ Usuários ➔ Aplicativos</strong>.</p>
+            <p>2. Certifique-se de que a <strong>URL de Redirecionamento</strong> cadastrada no seu aplicativo seja exatamente a URL acima.</p>
+            <p>3. Adicione o <strong>Client Secret (64 caracteres)</strong> nas <strong>Environment Variables da Vercel</strong> como <code className="bg-blue-100 px-1 py-0.5 rounded font-mono font-bold text-blue-900">BLING_CLIENT_SECRET</code> (ele fica 100% blindado e oculto do navegador).</p>
+          </div>
         </div>
 
         {msgCreds && (
@@ -350,12 +474,37 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
         <form onSubmit={handleSalvarCredenciais} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Client ID *</label>
-              <input name="client_id" type="text" required defaultValue={creds?.client_id || ''} className="w-full border border-gray-300 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold text-gray-700">
+                  Client ID * <span className="font-normal text-gray-500">(40 caracteres)</span>
+                </label>
+                {creds?.is_from_env && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-300">
+                    ⚡ Vercel (process.env)
+                  </span>
+                )}
+              </div>
+              <input
+                name="client_id"
+                type="text"
+                required
+                defaultValue={creds?.client_id || ''}
+                placeholder="Ex: 329698d249f0ec4025d23315a0cbb0..."
+                className="w-full border border-gray-300 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Client Secret *</label>
-              <input name="client_secret" type="password" required defaultValue={creds?.client_secret || ''} className="w-full border border-gray-300 rounded-lg p-2.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col justify-between">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <ShieldCheck size={14} className="text-emerald-600" /> Client Secret (Chave Secreta)
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  🔒 Blindado na Vercel
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed mt-1">
+                A chave secreta não é armazenada no banco e não pode ser visualizada no navegador. Ela é lida diretamente da variável de ambiente <code className="bg-white px-1.5 py-0.5 rounded border border-slate-300 font-mono text-[10px] font-bold text-slate-800">BLING_CLIENT_SECRET</code> na Vercel.
+              </p>
             </div>
           </div>
 
@@ -394,22 +543,34 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
             </div>
           </div>
           
-          <div className="flex gap-4 items-center mt-2 flex-wrap">
+          <div className="flex gap-3 items-center mt-2 flex-wrap">
             <button
               type="submit"
               disabled={loadingCreds}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
+              className="bg-blue-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
             >
               {loadingCreds ? <RefreshCw size={14} className="animate-spin" /> : null}
               <span>{loadingCreds ? 'Salvando...' : '💾 Salvar Configurações do Bling'}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={handleTestarBling}
+              disabled={loadingTesteBling}
+              className="bg-sky-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-sky-700 transition disabled:opacity-50 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
+            >
+              {loadingTesteBling ? <RefreshCw size={14} className="animate-spin" /> : <Activity size={14} />}
+              <span>{loadingTesteBling ? 'Testando Conexão...' : '🧪 Testar Conexão com Bling'}</span>
+            </button>
+
             {creds?.client_id && (
               <a 
-                href={`https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${creds.client_id}&state=state123`}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition inline-block text-xs shadow-sm"
+                href="/api/bling/auth"
+                className="bg-green-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-green-700 transition inline-flex items-center gap-1.5 text-xs shadow-sm cursor-pointer"
+                title="Conexão direta e segura com o Bling com proteção contra CSRF"
               >
-                🔐 Reconectar / Autorizar Bling
+                <ShieldCheck size={14} />
+                <span>🔐 Reconectar / Autorizar Bling</span>
               </a>
             )}
           </div>
@@ -436,18 +597,19 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
         )}
 
         <form onSubmit={handleSalvarMp} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Access Token (Começa com APP_USR-...) *
-            </label>
-            <input
-              name="mp_access_token"
-              type="password"
-              required
-              defaultValue={mpCreds?.access_token || ''}
-              placeholder="APP_USR-xxxx-xxxx-xxxx-xxxx"
-              className="w-full border border-gray-300 rounded-lg p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            />
+          {/* CARD DE SEGURANÇA DO ACCESS TOKEN */}
+          <div className="bg-sky-50/70 border border-sky-200 rounded-xl p-4 flex flex-col gap-2">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                <ShieldCheck size={16} className="text-emerald-600" /> Access Token de Produção
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold">
+                🔒 Blindado na Vercel
+              </span>
+            </div>
+            <p className="text-xs text-sky-900 leading-relaxed">
+              O Access Token foi removido da tela e do banco de dados por segurança. O servidor lê diretamente da variável de ambiente <code className="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-mono text-[11px] font-bold text-sky-950">MERCADOPAGO_ACCESS_TOKEN</code> na Vercel.
+            </p>
           </div>
 
           <div>
@@ -470,7 +632,7 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
               className="bg-sky-600 text-white px-6 py-3 rounded-lg font-bold text-xs hover:bg-sky-700 transition shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
               {loadingMp ? <RefreshCw size={14} className="animate-spin" /> : null}
-              <span>{loadingMp ? 'Salvando...' : '💾 Salvar Credenciais do Mercado Pago'}</span>
+              <span>{loadingMp ? 'Salvando...' : '💾 Salvar Configurações'}</span>
             </button>
           </div>
         </form>

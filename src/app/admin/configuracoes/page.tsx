@@ -10,17 +10,54 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
   let creds = null;
   let dbError = null;
   try {
-    const { data, error } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').single();
+    const { data, error } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').maybeSingle();
     if (error) dbError = error.message;
-    creds = data?.valor;
+
+    const envClientId = process.env.BLING_CLIENT_ID?.trim();
+    const envClientSecret = process.env.BLING_CLIENT_SECRET?.trim();
+    const envLojaBanho = process.env.BLING_LOJA_ID_BANHO_TOSA?.trim();
+    const envLojaMimo = process.env.BLING_LOJA_ID_MIMO_SHOW?.trim();
+
+    const clientId = envClientId || data?.valor?.client_id || '';
+    const secret = envClientSecret || data?.valor?.client_secret || '';
+
+    if (clientId || secret || data?.valor) {
+      creds = {
+        client_id: clientId,
+        has_secret: !!secret,
+        secret_is_vercel: !!envClientSecret,
+        is_from_env: !!(envClientId || envClientSecret),
+        loja_id_banho_tosa: envLojaBanho || data?.valor?.loja_id_banho_tosa || '',
+        loja_id_mimo_show: envLojaMimo || data?.valor?.loja_id_mimo_show || ''
+      };
+    }
   } catch (err) {
     dbError = String(err);
   }
 
+  let blingTokensInfo = null;
+  try {
+    const { data: cfgTokens } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').maybeSingle();
+    if (cfgTokens?.valor) {
+      blingTokensInfo = {
+        temAccessToken: !!cfgTokens.valor.access_token,
+        temRefreshToken: !!cfgTokens.valor.refresh_token,
+        expiresAt: cfgTokens.valor.expires_at || null,
+        atualizadoEm: cfgTokens.valor.atualizado_em || null,
+      };
+    }
+  } catch {}
+
   let mpCreds = null;
   try {
     const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'mercadopago_config').maybeSingle();
-    mpCreds = data?.valor;
+    const envMpToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim();
+    const envMpKey = process.env.MERCADOPAGO_PUBLIC_KEY?.trim();
+    mpCreds = {
+      is_from_env: !!envMpToken,
+      has_token: !!(envMpToken || data?.valor?.access_token),
+      public_key: envMpKey || data?.valor?.public_key || '',
+    };
   } catch {}
 
   let temSenhaConfigurada = false;
@@ -75,6 +112,7 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
         temSenhaConfigurada={temSenhaConfigurada}
         resendConfig={resendConfig}
         creds={creds}
+        blingTokensInfo={blingTokensInfo}
         mpCreds={mpCreds}
         freteConfig={freteConfig}
         analyticsConfig={analyticsConfig}

@@ -24,20 +24,33 @@ export interface EnvioBlingResultado {
 }
 
 /**
- * Obtém as credenciais cadastradas do Bling ERP no Supabase
+ * Obtém as credenciais cadastradas do Bling ERP (lendo da Vercel/process.env ou do Supabase)
  */
 export async function obterCredenciaisBling(): Promise<BlingCredentials | null> {
+  const envClientId = process.env.BLING_CLIENT_ID?.trim();
+  const envClientSecret = process.env.BLING_CLIENT_SECRET?.trim();
+  const envLojaBanho = process.env.BLING_LOJA_ID_BANHO_TOSA?.trim();
+  const envLojaMimo = process.env.BLING_LOJA_ID_MIMO_SHOW?.trim();
+
   const { data } = await supabase
     .from('configuracoes')
     .select('valor')
     .eq('chave', 'bling_credentials')
     .maybeSingle();
 
-  if (!data?.valor?.client_id || !data?.valor?.client_secret) {
+  const clientId = envClientId || data?.valor?.client_id;
+  const clientSecret = envClientSecret || data?.valor?.client_secret;
+
+  if (!clientId || !clientSecret) {
     return null;
   }
 
-  return data.valor as BlingCredentials;
+  return {
+    client_id: String(clientId).trim(),
+    client_secret: String(clientSecret).trim(),
+    loja_id_banho_tosa: envLojaBanho || data?.valor?.loja_id_banho_tosa,
+    loja_id_mimo_show: envLojaMimo || data?.valor?.loja_id_mimo_show,
+  };
 }
 
 /**
@@ -73,7 +86,9 @@ export async function renovarTokenBling(): Promise<{ sucesso: boolean; access_to
       return { sucesso: false, erro: 'Refresh token do Bling não encontrado nas configurações.' };
     }
 
-    const basicAuth = Buffer.from(`${creds.client_id}:${creds.client_secret}`).toString('base64');
+    const clientId = String(creds.client_id).trim();
+    const clientSecret = String(creds.client_secret).trim();
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
     const res = await fetch('https://api.bling.com.br/Api/v3/oauth/token', {
       method: 'POST',
@@ -91,17 +106,21 @@ export async function renovarTokenBling(): Promise<{ sucesso: boolean; access_to
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.access_token) {
-      const errMsg = data?.error?.description || data?.error || JSON.stringify(data);
+      const errMsg = data?.error?.description || data?.error?.message || data?.error || JSON.stringify(data);
       console.error('[BLING OAUTH] Falha ao renovar token:', errMsg);
       return { sucesso: false, erro: `Falha na renovação OAuth do Bling: ${errMsg}` };
     }
 
     // Salvar novos tokens no banco
-    const novosTokens: BlingTokenData = {
+    const agora = Date.now();
+    const expiresInSec = Number(data.expires_in) || 21600;
+    const novosTokens = {
       access_token: data.access_token,
       refresh_token: data.refresh_token || tokens.refresh_token,
-      expires_in: data.expires_in,
+      expires_in: expiresInSec,
+      expires_at: agora + (expiresInSec * 1000),
       token_type: data.token_type || 'Bearer',
+      atualizado_em: new Date().toISOString(),
     };
 
     await supabase.from('configuracoes').upsert({

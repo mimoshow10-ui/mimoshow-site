@@ -72,50 +72,137 @@ export async function salvarResendConfig(formData: FormData) {
 
 export async function salvarCredenciais(formData: FormData) {
   try {
-    const clientId = formData.get('client_id') as string;
-    const clientSecret = formData.get('client_secret') as string;
+    const rawClientId = (formData.get('client_id') as string || '').trim();
     const lojaIdBanhoTosa = (formData.get('loja_id_banho_tosa') as string || '').trim();
     const lojaIdMimoShow = (formData.get('loja_id_mimo_show') as string || '').trim();
 
-    if (!clientId || !clientSecret) {
-      return { sucesso: false, erro: 'Client ID e Client Secret são obrigatórios.' };
+    const envClientId = process.env.BLING_CLIENT_ID?.trim();
+    const clientIdFinal = rawClientId || envClientId;
+
+    if (!clientIdFinal) {
+      return { sucesso: false, erro: 'O Client ID do Bling é obrigatório (informe no formulário ou na Vercel como BLING_CLIENT_ID).' };
     }
 
+    if (clientIdFinal.length !== 40) {
+      return { 
+        sucesso: false, 
+        erro: `O Client ID do Bling deve ter exatamente 40 caracteres hexadecimais (o valor inserido possui ${clientIdFinal.length} caracteres).` 
+      };
+    }
+
+    // Salvar sem client_secret no banco — o Client Secret fica 100% blindado na Vercel (BLING_CLIENT_SECRET)
     const { error } = await supabase.from('configuracoes').upsert({
       chave: 'bling_credentials',
       valor: {
-        client_id: clientId,
-        client_secret: clientSecret,
+        client_id: clientIdFinal,
         loja_id_banho_tosa: lojaIdBanhoTosa,
-        loja_id_mimo_show: lojaIdMimoShow
+        loja_id_mimo_show: lojaIdMimoShow,
+        gerenciado_via_vercel: true,
+        atualizado_em: new Date().toISOString()
       }
     }, { onConflict: 'chave' });
 
     if (error) {
-      return { sucesso: false, erro: `Erro ao salvar credenciais: ${error.message}` };
+      return { sucesso: false, erro: `Erro ao salvar configurações: ${error.message}` };
     }
 
     revalidatePath('/admin/configuracoes');
-    return { sucesso: true, mensagem: 'Credenciais e IDs de Loja do Bling salvos com sucesso!' };
+    return { sucesso: true, mensagem: 'Configurações salvas com sucesso! O Client Secret agora é gerenciado com segurança na Vercel.' };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar credenciais do Bling.' };
   }
 }
 
+export async function testarConexaoBling() {
+  try {
+    const { obterTokenBlingValido, renovarTokenBling, obterTokensBling, obterCredenciaisBling } = await import('@/lib/bling/blingService');
+
+    const creds = await obterCredenciaisBling();
+    if (!creds?.client_id || !creds?.client_secret) {
+      return {
+        sucesso: false,
+        status: 'sem_credenciais',
+        mensagem: 'Client ID ou Client Secret não cadastrados. Preencha e salve suas credenciais primeiro.'
+      };
+    }
+
+    const tokens = await obterTokensBling();
+    if (!tokens?.access_token && !tokens?.refresh_token) {
+      return {
+        sucesso: false,
+        status: 'desconectado',
+        mensagem: 'Nenhum token encontrado. Clique no botão "🔐 Reconectar / Autorizar Bling" para autenticar sua conta.'
+      };
+    }
+
+    const tokenValido = await obterTokenBlingValido();
+    if (!tokenValido) {
+      return {
+        sucesso: false,
+        status: 'erro_token',
+        mensagem: 'Não foi possível validar nem renovar o token do Bling. O token de autorização pode ter expirado ou as credenciais foram alteradas. Por favor, clique em "🔐 Reconectar / Autorizar Bling".'
+      };
+    }
+
+    // Testar chamada real na API v3 do Bling
+    const testRes = await fetch('https://api.bling.com.br/Api/v3/pedidos/vendas?limite=1', {
+      headers: {
+        'Authorization': `Bearer ${tokenValido}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (testRes.ok) {
+      return {
+        sucesso: true,
+        status: 'conectado',
+        mensagem: 'Conexão ativa e validada! O Bling ERP respondeu com sucesso (HTTP 200 OK).'
+      };
+    }
+
+    if (testRes.status === 401) {
+      // Tentar renovação forçada
+      const renova = await renovarTokenBling();
+      if (renova.sucesso && renova.access_token) {
+        return {
+          sucesso: true,
+          status: 'conectado',
+          mensagem: 'Token expirado foi renovado com sucesso! A conexão com o Bling está ativa e restabelecida.'
+        };
+      }
+      return {
+        sucesso: false,
+        status: 'token_invalido',
+        mensagem: `O Bling rejeitou o token (HTTP 401) e a renovação falhou: ${renova.erro}. É necessário reconectar a autorização.`
+      };
+    }
+
+    const errData = await testRes.json().catch(() => ({}));
+    return {
+      sucesso: false,
+      status: 'erro_api',
+      mensagem: `Bling retornou HTTP ${testRes.status}: ${errData?.error?.message || errData?.error?.description || 'Erro na requisição.'}`
+    };
+  } catch (err: any) {
+    return {
+      sucesso: false,
+      status: 'erro_fatal',
+      mensagem: `Exceção ao testar conexão: ${err.message || 'Erro inesperado.'}`
+    };
+  }
+}
+
 export async function salvarMercadoPago(formData: FormData) {
   try {
-    const accessToken = (formData.get('mp_access_token') as string || '').trim();
+    const rawAccessToken = (formData.get('mp_access_token') as string || '').trim();
     const publicKey = (formData.get('mp_public_key') as string || '').trim();
-
-    if (!accessToken) {
-      return { sucesso: false, erro: 'Access Token do Mercado Pago é obrigatório.' };
-    }
 
     const { error } = await supabase.from('configuracoes').upsert({
       chave: 'mercadopago_config',
       valor: {
-        access_token: accessToken,
+        ...(rawAccessToken ? { access_token: rawAccessToken } : {}),
         public_key: publicKey,
+        gerenciado_via_vercel: !rawAccessToken,
         atualizado_em: new Date().toISOString()
       }
     }, { onConflict: 'chave' });
@@ -125,7 +212,12 @@ export async function salvarMercadoPago(formData: FormData) {
     }
 
     revalidatePath('/admin/configuracoes');
-    return { sucesso: true, mensagem: 'Credenciais do Mercado Pago salvas com sucesso!' };
+    return { 
+      sucesso: true, 
+      mensagem: rawAccessToken 
+        ? 'Credenciais salvas com sucesso!' 
+        : 'Configurações salvas! O Access Token do Mercado Pago está 100% blindado na Vercel.' 
+    };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar Mercado Pago.' };
   }
